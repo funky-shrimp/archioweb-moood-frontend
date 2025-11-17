@@ -36,3 +36,9 @@ npm run dev
 ```sh
 npm run build
 ```
+
+### Création branche Théo 
+
+```bash
+git checkout -b NOM_BRANCHE
+```
