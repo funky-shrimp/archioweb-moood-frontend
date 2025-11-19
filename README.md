@@ -42,3 +42,12 @@ npm run build
 ```bash
 git checkout -b NOM_BRANCHE
 ```
+
+### Création du Système global de l’app
+
+```bash
+git commit -m "Création du Système global de l’app"
+```
+
+
+
