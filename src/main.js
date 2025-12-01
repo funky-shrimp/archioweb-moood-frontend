@@ -9,15 +9,24 @@ import 'quasar/dist/quasar.css'
 // and placed in same folder as main.js
 import App from './App.vue'
 import router from './router'
+import { createPinia } from 'pinia'
 import './assets/styles.css'
 
 const myApp = createApp(App)
+
+//À enlever quand le auth est fonctionnel
+localStorage.setItem('auth_token', 'dev-token')
+localStorage.setItem('auth_user', JSON.stringify({ _id: 'dev', username: 'dev' }))
+//location.reload()
 
 myApp.use(Quasar, {
   plugins: {}, // import Quasar plugins and add here
 })
 
 myApp.use(router)
+
+const pinia = createPinia()
+myApp.use(pinia)
 
 // Assumes you have a <div id="app"></div> in your index.html
 myApp.mount('#app')
