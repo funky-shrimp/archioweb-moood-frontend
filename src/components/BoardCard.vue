@@ -1,5 +1,11 @@
 <template>
+  <!--
+    Carte de moodboard utilisée dans les listes (Explore, Search, profil, etc.).
+    Elle affiche : l’owner, un aperçu interactif (pan/zoom) et des actions (like / commentaires).
+    Un clic “normal” sur la carte ouvre la page détaillée du board.
+  -->
   <article class="board-card" :class="{ dragging }" @click="onCardClick" role="button" tabindex="0">
+    <!-- En-tête : infos sur l’auteur + bouton Follow -->
     <div class="board-header">
       <img class="owner-avatar" :src="ownerAvatar" alt="avatar" v-if="board?.owner" />
       <div class="owner-meta">
@@ -7,11 +13,25 @@
         <div class="owner-sub small-muted">{{ boardSubtitle }}</div>
       </div>
       <div class="spacer"></div>
-      <FollowButton v-if="showFollow && board?.owner?._id" :userId="board.owner._id" :initialFollowing="board.owner?.viewerIsFollowing" @toggled.stop />
+      <FollowButton
+        v-if="showFollow && board?.owner?._id"
+        :userId="board.owner._id"
+        :initialFollowing="board.owner?.viewerIsFollowing"
+        @toggled.stop
+      />
     </div>
 
+    <!-- Preview interactif : on peut “tirer” l’image et zoomer à la molette -->
     <div class="board-preview">
-      <div class="preview-stage" ref="stage" @pointerdown="onPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerUp" @wheel.prevent="onWheel">
+      <div
+        class="preview-stage"
+        ref="stage"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerUp"
+        @pointercancel="onPointerUp"
+        @wheel.prevent="onWheel"
+      >
         <div class="preview-content" ref="content" :style="contentStyle">
           <img v-if="firstImage" :src="firstImage" class="preview-image" />
           <div v-else class="preview-placeholder">No preview</div>
@@ -21,6 +41,7 @@
       </div>
     </div>
 
+    <!-- Actions sous la carte (like + compteur de commentaires) -->
     <div class="board-actions" v-if="showActions">
       <button class="icon-btn" @click.stop="toggleLike">
         <span class="heart">♡</span> <span class="count">{{ likesCount }}</span>
@@ -38,28 +59,41 @@ import { useRouter } from 'vue-router'
 import FollowButton from './FollowButton.vue'
 import api from '../services/api'
 
+// Props :
+//  - board : données du board (obligatoire)
+//  - showFollow : affiche ou non le bouton Follow sur l’auteur
+//  - showActions : affiche ou non la barre de like / commentaires
 const props = defineProps({
   board: { type: Object, required: true },
   showFollow: { type: Boolean, default: true },
-  showActions: { type: Boolean, default: true }
+  showActions: { type: Boolean, default: true },
 })
 
 const router = useRouter()
+
+// Compteurs locaux, initialisés à partir des données du board
 const likesCount = ref(props.board.likesCount ?? 0)
 const commentsCount = ref(props.board.commentsCount ?? 0)
 
+// Première image trouvée dans les éléments du board (sert de vignette)
 const firstImage = computed(() => {
   const el = (props.board.elements || []).find(e => e.type === 'image')
   return el?.src || ''
 })
-const ownerAvatar = computed(() => props.board.owner?.avatar || '/placeholder-avatar.png')
-const boardSubtitle = computed(() => (props.board.labels || []).slice(0,3).join(' • '))
 
+// Avatar de l’owner (avec fallback)
+const ownerAvatar = computed(() => props.board.owner?.avatar || '/placeholder-avatar.png')
+
+// Sous-titre sous le nom : 3 premiers labels séparés par des puces
+const boardSubtitle = computed(() => (props.board.labels || []).slice(0, 3).join(' • '))
+
+// Ouvre la page détaillée du board
 function open() {
   if (!props.board?._id) return
   router.push(`/board/${props.board._id}`)
 }
 
+// Like / unlike optimiste, synchronisé avec l’API
 async function toggleLike() {
   try {
     const liked = !!props.board.viewerHasLiked
@@ -72,28 +106,35 @@ async function toggleLike() {
       likesCount.value = likesCount.value + 1
       props.board.viewerHasLiked = true
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    // en mode front-only on ignore simplement les erreurs
+  }
 }
 
-function openComments() { open() }
+// Pour l’instant on ouvre simplement la board, les commentaires sont gérés dans BoardView
+function openComments() {
+  open()
+}
 
-// --- interactive pan/zoom logic ---
+// --- logique d’aperçu interactif (pan/zoom) ---
 const stage = ref(null)
 const content = ref(null)
-const transform = ref({ x: 0, y: 0, s: 1 })
+const transform = ref({ x: 0, y: 0, s: 1 }) // x/y = position, s = zoom
 let draggingLocal = false
 let last = { x: 0, y: 0 }
 let moved = false
 const dragging = ref(false)
 
+// Style calculé pour appliquer la transformation CSS
 function contentStyle() {
   return {
     transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.s})`,
   }
 }
 
+// Démarrage du drag
 function onPointerDown(e) {
-  // only primary button / touch
+  // seulement bouton principal / touch
   if (e.button && e.button !== 0) return
   draggingLocal = true
   dragging.value = true
@@ -103,6 +144,7 @@ function onPointerDown(e) {
   e.target.setPointerCapture?.(e.pointerId)
 }
 
+// Déplacement du drag
 function onPointerMove(e) {
   if (!draggingLocal) return
   const dx = e.clientX - last.x
@@ -114,16 +156,19 @@ function onPointerMove(e) {
   last.y = e.clientY
 }
 
+// Fin du drag
 function onPointerUp(e) {
   draggingLocal = false
   dragging.value = false
-  try { e.target.releasePointerCapture?.(e.pointerId) } catch {}
+  try {
+    e.target.releasePointerCapture?.(e.pointerId)
+  } catch {}
 }
 
+// Zoom à la molette autour du pointeur
 function onWheel(e) {
   const delta = -e.deltaY / 500
   const newS = Math.min(2.5, Math.max(0.4, transform.value.s + delta))
-  // zoom around pointer
   const rect = stage.value.getBoundingClientRect()
   const px = e.clientX - rect.left
   const py = e.clientY - rect.top
@@ -134,9 +179,12 @@ function onWheel(e) {
   transform.value.y = py - oy * newS
 }
 
-// prevent opening the board when user was dragging
+// Empêche d’ouvrir la board si l’utilisateur était en train de dragger l’aperçu
 function onCardClick() {
-  if (moved) { moved = false; return } // consumed drag
+  if (moved) {
+    moved = false
+    return // drag consommé, on n’ouvre pas
+  }
   open()
 }
 </script>

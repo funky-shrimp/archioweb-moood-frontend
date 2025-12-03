@@ -1,7 +1,14 @@
 <template>
+  <!--
+    Header principal de l’application.
+    - Affiche la “brand” Moood
+    - Barre de recherche qui redirige vers /search?q=...
+    - Navigation (Explore + Login/Signup ou profil + Logout selon l’état de connexion)
+  -->
   <header class="header">
     <div class="brand">Moood</div>
 
+    <!-- barre de recherche globale des boards -->
     <div class="searchbar">
       <input v-model="q" placeholder="Search boards..." @keyup.enter="onSearch" />
       <button @click="onSearch">Search</button>
@@ -9,10 +16,12 @@
 
     <nav class="nav">
       <router-link to="/explore">Explore</router-link>
+      <!-- Si un user est connecté : lien vers son profil + bouton Logout -->
       <template v-if="auth.user">
         <router-link :to="`/profile/${auth.user._id}`">{{ auth.user.username }}</router-link>
         <button class="btn" @click="logout">Logout</button>
       </template>
+      <!-- Sinon : liens Login / Signup -->
       <template v-else>
         <router-link to="/login">Login</router-link>
         <router-link to="/signup">Signup</router-link>
@@ -26,14 +35,23 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
+// Store d’auth pour savoir si un user est loggé
 const auth = useAuthStore()
 const router = useRouter()
+
+// Texte de la barre de recherche
 const q = ref('')
 
+// Lance la recherche en naviguant vers /search avec un query param
 function onSearch() {
   router.push({ path: '/search', query: { q: q.value || '' } })
 }
-function logout() { auth.clearAuth(); router.push('/') }
+
+// Déconnexion simple : on vide le store + localStorage et on retourne à la home
+function logout() {
+  auth.clearAuth()
+  router.push('/')
+}
 </script>
 
 <style scoped>

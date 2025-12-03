@@ -1,7 +1,23 @@
 <template>
+  <!--
+    Bouton de like principal pour un board.
+    - Affiche un cœur plein/vide + le compteur.
+    - Gère l’appel API /like /unlike et remonte l’état au parent.
+  -->
   <button class="like-btn" :class="{ liked }" @click="toggle" :disabled="loading" aria-pressed="liked">
-    <svg v-if="liked" class="heart" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 21s-7-4.35-9-7.1C1.5 11.9 3 7.9 6 6.5 8 5.5 10 6 12 8c2-2 4-2.5 6-1.5 3 1.4 4.5 5.4 3 7.4-2 2.75-9 7.1-9 7.1z"/></svg>
-    <svg v-else class="heart" viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M12 21s-7-4.35-9-7.1C1.5 11.9 3 7.9 6 6.5 8 5.5 10 6 12 8c2-2 4-2.5 6-1.5 3 1.4 4.5 5.4 3 7.4-2 2.75-9 7.1-9 7.1z"/></svg>
+    <!-- Cœur rempli quand l’utilisateur a liké -->
+    <svg v-if="liked" class="heart" viewBox="0 0 24 24" width="18" height="18">
+      <path fill="currentColor" d="M12 21s-7-4.35-9-7.1C1.5 11.9 3 7.9 6 6.5 8 5.5 10 6 12 8c2-2 4-2.5 6-1.5 3 1.4 4.5 5.4 3 7.4-2 2.75-9 7.1-9 7.1z" />
+    </svg>
+    <!-- Cœur vide sinon -->
+    <svg v-else class="heart" viewBox="0 0 24 24" width="18" height="18">
+      <path
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        d="M12 21s-7-4.35-9-7.1C1.5 11.9 3 7.9 6 6.5 8 5.5 10 6 12 8c2-2 4-2.5 6-1.5 3 1.4 4.5 5.4 3 7.4-2 2.75-9 7.1-9 7.1z"
+      />
+    </svg>
     <span class="count">{{ count }}</span>
   </button>
 </template>
@@ -10,20 +26,30 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
+
+// Props :
+//  - boardId : identifiant du board
+//  - initialLiked / initialCount : état initial fourni par le backend
 const props = defineProps({
   boardId: { type: String, required: true },
   initialLiked: { type: Boolean, default: false },
-  initialCount: { type: Number, default: 0 }
+  initialCount: { type: Number, default: 0 },
 })
+
+// Événement émis quand le like change (pour que le parent puisse réagir si besoin)
 const emit = defineEmits(['toggled'])
+
 const auth = useAuthStore()
+
+// État local du bouton
 const liked = ref(!!props.initialLiked)
 const count = ref(props.initialCount || 0)
 const loading = ref(false)
 
+// Toggle like/unlike avec appels API
 async function toggle() {
   if (!auth.token) {
-    // redirect to signup/login UX handled by router outside
+    // Si l'utilisateur n'est pas connecté, on ne like pas (la redirection est gérée ailleurs)
     return
   }
   loading.value = true
@@ -46,7 +72,7 @@ async function toggle() {
 }
 
 onMounted(() => {
-  // conserve initial props
+  // On pourrait synchroniser ici si les props changent plus tard
 })
 </script>
 

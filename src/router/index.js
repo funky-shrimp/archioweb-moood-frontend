@@ -11,6 +11,12 @@ const routes = [
     name: 'BoardView',
     component: () => import('../pages/BoardView.vue')
   },
+  {
+    path: '/board/new',
+    name: 'BoardCreate',
+    component: () => import('../pages/BoardEdit.vue'),
+    meta: { requiresAuth: true },
+  },
   { path: '/board/:id/edit', component: () => import('../pages/BoardEdit.vue'), props: true, meta: { requiresAuth: true } },
   { path: '/explore', component: () => import('../pages/Explore.vue'), meta: { requiresAuth: true } },
   // Ajoute la route /search (assure-toi d'avoir import ou lazy-load)

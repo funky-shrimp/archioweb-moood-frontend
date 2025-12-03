@@ -1,8 +1,17 @@
 <template>
+  <!--
+    Liste des commentaires pour un board donné.
+    Elle va chercher les commentaires via l’API, les affiche, et permet de supprimer les siens.
+  -->
   <section class="comments">
+    <!-- Titre optionnel (peut être masqué via la prop showTitle) -->
     <h4 v-if="showTitle">Comments</h4>
+
+    <!-- États de chargement / erreur -->
     <div v-if="loading">Loading comments...</div>
     <div v-if="error" class="error">{{ error }}</div>
+
+    <!-- Liste des commentaires -->
     <ul v-else>
       <li v-for="c in comments" :key="c._id" class="comment-item">
         <div class="meta">
@@ -11,6 +20,7 @@
         </div>
         <div class="text">{{ c.text }}</div>
         <div class="c-actions">
+          <!-- Le bouton Delete n’apparaît que pour l’auteur du commentaire -->
           <button v-if="isOwn(c)" @click="del(c._id)" class="btn-small">Delete</button>
         </div>
       </li>
@@ -22,31 +32,44 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
+
+// Props : id du board, et flag pour afficher/cacher le titre "Comments"
 const props = defineProps({
   boardId: { type: String, required: true },
-  showTitle: { type: Boolean, default: true } // <-- added prop
+  showTitle: { type: Boolean, default: true }, // permet à BoardView de masquer le titre et gérer sa propre section
 })
+
+// Événement émis lorsqu’un commentaire est supprimé (pour le parent si besoin)
 const emit = defineEmits(['deleted'])
+
+// État local
 const comments = ref([])
 const loading = ref(false)
 const error = ref(null)
 const auth = useAuthStore()
 
+// Charge les commentaires depuis l’API
 async function fetchComments() {
-  loading.value = true; error.value = null
+  loading.value = true
+  error.value = null
   try {
     const res = await api.get(`/boards/${props.boardId}/comments`)
     comments.value = Array.isArray(res.data) ? res.data : (res.data?.comments || [])
   } catch (err) {
-    console.error(err); error.value = 'Impossible de charger les commentaires'
+    console.error(err)
+    error.value = 'Impossible de charger les commentaires'
     comments.value = []
-  } finally { loading.value = false }
+  } finally {
+    loading.value = false
+  }
 }
 
+// Vérifie si le commentaire appartient à l’utilisateur connecté
 function isOwn(c) {
   return auth.user && c.author && c.author._id === auth.user._id
 }
 
+// Supprime un commentaire (avec confirmation) puis met à jour la liste locale
 async function del(id) {
   if (!confirm('Supprimer ce commentaire ?')) return
   try {
@@ -58,11 +81,13 @@ async function del(id) {
   }
 }
 
+// Formate la date de création pour l’affichage
 function formatDate(s) {
   if (!s) return ''
   return new Date(s).toLocaleString()
 }
 
+// Charge les commentaires au montage du composant
 onMounted(fetchComments)
 </script>
 
