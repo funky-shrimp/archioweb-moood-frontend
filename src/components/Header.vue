@@ -8,8 +8,8 @@
   <header class="header">
     <div class="brand">Moood</div>
 
-    <!-- barre de recherche globale des boards -->
-    <div class="searchbar">
+    <!-- barre de recherche globale des boards - visible uniquement si connecté -->
+    <div v-if="auth.user" class="searchbar">
       <input v-model="q" placeholder="Search boards..." @keyup.enter="onSearch" />
       <button @click="onSearch">Search</button>
     </div>
@@ -77,13 +77,13 @@ nav a { margin: 0 8px; }
 }
 .searchbar button {
   padding: 8px 12px;
-  background: var(--primary);
+  background: #666;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 .searchbar button:hover {
-  background: var(--primary-dark);
+  background: #555;
 }
 </style>
