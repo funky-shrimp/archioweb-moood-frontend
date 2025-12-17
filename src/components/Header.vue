@@ -12,7 +12,7 @@
     </div>
 
     <!-- barre de recherche globale des boards - visible uniquement si connecté -->
-    <div v-if="auth.user" class="searchbar desktop-only">
+    <div v-if="auth.user" class="searchbar">
       <input v-model="q" placeholder="Search boards..." @keyup.enter="onSearch" />
       <button @click="onSearch">Search</button>
     </div>
@@ -337,10 +337,6 @@ function navigateTo(path) {
 /* Responsive */
 @media (max-width: 768px) {
   .desktop-nav {
-    display: none;
-  }
-
-  .desktop-only {
     display: none !important;
   }
 
@@ -358,6 +354,22 @@ function navigateTo(path) {
 
   .mobile-menu {
     display: block;
+  }
+
+  .searchbar {
+    flex: 1;
+    margin: 0 12px;
+    max-width: none;
+  }
+
+  .searchbar input {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .searchbar button {
+    padding: 6px 12px;
+    font-size: 13px;
   }
 
   .header {
