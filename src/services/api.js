@@ -2,9 +2,10 @@ import axios from 'axios'
 import { SAMPLE_BOARDS, SAMPLE_USERS } from '../_dev/fixtures'
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true' || import.meta.env.DEV
+export const API_URL = import.meta.env.VITE_API_URL || '/api'
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_URL,
   timeout: 10000,
 })
 
