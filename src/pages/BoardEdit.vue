@@ -11,11 +11,11 @@
       <div class="editor-body">
         <div class="canvas-wrapper">
           <div class="canvas-toolbar">
-            <button type="button" class="icon-btn" @click="reset">
+            <button type="button" class="icon-btn" @click="reset" title="Clear all">
               ×
             </button>
-            <button type="button" class="icon-btn">
-              ⎘
+            <button type="button" class="icon-btn" @click="saveBoard" title="Save board">
+              💾
             </button>
           </div>
 
@@ -24,8 +24,9 @@
               v-for="el in elements"
               :key="el.id"
               class="canvas-el"
-              :class="el.type"
+              :class="[el.type, { selected: selectedElement === el.id }]"
               :style="styleFor(el)"
+              @mousedown="startDrag(el, $event)"
             >
               <span class="label">
                 {{ el.type.toUpperCase() }} • z={{ el.z }}
@@ -58,10 +59,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const canvas = ref(null)
 const elements = ref([])
+const selectedElement = ref(null)
+const isDragging = ref(false)
+const dragOffset = ref({ x: 0, y: 0 })
 
 function add(type) {
   const maxZ = elements.value.length ? Math.max(...elements.value.map(e => e.z)) : 0
@@ -82,7 +86,33 @@ function add(type) {
 }
 
 function reset() {
+  if (!confirm('Clear all elements?')) return
   elements.value = []
+  selectedElement.value = null
+  localStorage.removeItem('moood_board_draft')
+}
+
+function saveBoard() {
+  const boardData = {
+    elements: elements.value,
+    savedAt: new Date().toISOString()
+  }
+  localStorage.setItem('moood_board_draft', JSON.stringify(boardData))
+  
+  // Confirmation visuelle
+  alert('Board saved successfully!')
+}
+
+function loadBoard() {
+  const saved = localStorage.getItem('moood_board_draft')
+  if (saved) {
+    try {
+      const boardData = JSON.parse(saved)
+      elements.value = boardData.elements || []
+    } catch (err) {
+      console.error('Failed to load board:', err)
+    }
+  }
 }
 
 function styleFor(el) {
@@ -92,6 +122,54 @@ function styleFor(el) {
     zIndex: el.z,
   }
 }
+
+function startDrag(el, event) {
+  event.preventDefault()
+  selectedElement.value = el.id
+  isDragging.value = true
+  
+  const rect = canvas.value.getBoundingClientRect()
+  dragOffset.value = {
+    x: event.clientX - rect.left - el.x,
+    y: event.clientY - rect.top - el.y
+  }
+}
+
+function onMouseMove(event) {
+  if (!isDragging.value || !selectedElement.value) return
+  
+  const rect = canvas.value.getBoundingClientRect()
+  const element = elements.value.find(e => e.id === selectedElement.value)
+  
+  if (element) {
+    let newX = event.clientX - rect.left - dragOffset.value.x
+    let newY = event.clientY - rect.top - dragOffset.value.y
+    
+    // Contraintes pour rester dans le canvas
+    const elWidth = 140
+    const elHeight = 90
+    newX = Math.max(0, Math.min(newX, rect.width - elWidth))
+    newY = Math.max(0, Math.min(newY, rect.height - elHeight))
+    
+    element.x = newX
+    element.y = newY
+  }
+}
+
+function onMouseUp() {
+  isDragging.value = false
+}
+
+onMounted(() => {
+  loadBoard()
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', onMouseMove)
+  document.removeEventListener('mouseup', onMouseUp)
+})
 </script>
 
 <style scoped>
@@ -166,6 +244,18 @@ function styleFor(el) {
   justify-content: center;
   color: #111827;
   font-size: 12px;
+  cursor: move;
+  user-select: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.canvas-el:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.canvas-el.selected {
+  box-shadow: 0 0 0 3px #3b82f6;
+  outline: none;
 }
 
 .canvas-el.text {
