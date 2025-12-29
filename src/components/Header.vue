@@ -6,7 +6,7 @@
     - Navigation (Explore + Login/Signup ou profil + Logout selon l’état de connexion)
   -->
   <header class="header">
-    <div class="brand">
+    <div class="brand" @click="router.push('/explore')">
       <img src="/logo.png" alt="Moood" class="logo logo-desktop" />
       <img src="/logoMobile.png" alt="Moood" class="logo logo-mobile" />
     </div>
@@ -53,13 +53,8 @@
           </button>
 
           <template v-if="auth.user">
-            <button class="mobile-nav-item account-item" @click="navigateTo(`/profile/${auth.user._id}`)">
-              <div class="account-info">
-                <div class="avatar-circle">
-                  {{ (auth.user.username || 'U').charAt(0).toUpperCase() }}
-                </div>
-                <span>{{ auth.user.username }}</span>
-              </div>
+            <button class="mobile-nav-item" @click="navigateTo(`/profile/${auth.user._id}`)">
+              {{ auth.user.username }}
             </button>
             <button class="mobile-nav-item logout-item" @click="logout">
               Logout
@@ -138,6 +133,7 @@ function navigateTo(path) {
 .brand {
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 
 .logo {
