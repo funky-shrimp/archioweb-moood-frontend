@@ -209,6 +209,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  z-index: 10;
 }
 
 .icon-btn {
@@ -228,7 +229,7 @@ onUnmounted(() => {
   position: relative;
   margin: 0 auto;
   max-width: 520px;
-  height: 360px;
+  height: 280px;
   background: #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
@@ -308,8 +309,25 @@ onUnmounted(() => {
     padding: 16px;
   }
 
+  .canvas-wrapper {
+    padding: 16px;
+  }
+
   .canvas {
     height: 280px;
+  }
+
+  .canvas-toolbar {
+    top: 16px;
+    right: 16px;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-width: 2px;
   }
 
   .toolbar {

@@ -190,15 +190,15 @@ function onCardClick() {
 </script>
 
 <style scoped>
-.board-card { background:#fff; border-radius:12px; padding:14px; border:1px solid #eee; display:flex; flex-direction:column; gap:12px; cursor:default; max-width:980px; margin:0 auto; }
+.board-card { background:#fff; border-radius:12px; padding:16px; border:1px solid #eee; display:flex; flex-direction:column; gap:14px; cursor:default; max-width:980px; margin:0 auto; }
 .board-card.dragging { cursor:grabbing }
 .board-header { display:flex; align-items:center; gap:12px; }
-.owner-avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; border:1px solid #e6e6e6 }
+.owner-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #e6e6e6 }
 .owner-meta { display:flex; flex-direction:column }
-.owner-name { font-weight:600 }
+.owner-name { font-weight:600; font-size:15px; }
 .spacer { flex:1 }
 .board-preview { display:flex; justify-content:center; align-items:center; background:transparent; border-radius:10px; overflow:hidden }
-.preview-stage { width:100%; height:340px; position:relative; background:#f6f6f8; border-radius:8px; overflow:hidden; touch-action:none; cursor:grab; display:flex; align-items:center; justify-content:center }
+.preview-stage { width:100%; height:320px; position:relative; background:#f6f6f8; border-radius:8px; overflow:hidden; touch-action:none; cursor:grab; display:flex; align-items:center; justify-content:center }
 .preview-content { will-change:transform; transition: transform 120ms linear; display:flex; align-items:center; justify-content:center; width:86%; height:90%; }
 .preview-image { width:100%; height:100%; object-fit:cover; border-radius:6px }
 .open-btn { position:absolute; right:10px; top:10px; z-index:10; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.9); border:1px solid #ddd; cursor:pointer }
