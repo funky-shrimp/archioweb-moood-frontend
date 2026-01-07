@@ -6,13 +6,13 @@
     - Navigation (Explore + Login/Signup ou profil + Logout selon l’état de connexion)
   -->
   <header class="header">
-    <div class="brand">
+    <div class="brand" @click="router.push('/explore')">
       <img src="/logo.png" alt="Moood" class="logo logo-desktop" />
       <img src="/logoMobile.png" alt="Moood" class="logo logo-mobile" />
     </div>
 
     <!-- barre de recherche globale des boards - visible uniquement si connecté -->
-    <div v-if="auth.user" class="searchbar desktop-only">
+    <div v-if="auth.user" class="searchbar">
       <input v-model="q" placeholder="Search boards..." @keyup.enter="onSearch" />
       <button @click="onSearch">Search</button>
     </div>
@@ -53,13 +53,8 @@
           </button>
 
           <template v-if="auth.user">
-            <button class="mobile-nav-item account-item" @click="navigateTo(`/profile/${auth.user._id}`)">
-              <div class="account-info">
-                <div class="avatar-circle">
-                  {{ (auth.user.username || 'U').charAt(0).toUpperCase() }}
-                </div>
-                <span>{{ auth.user.username }}</span>
-              </div>
+            <button class="mobile-nav-item" @click="navigateTo(`/profile/${auth.user._id}`)">
+              {{ auth.user.username }}
             </button>
             <button class="mobile-nav-item logout-item" @click="logout">
               Logout
@@ -138,6 +133,7 @@ function navigateTo(path) {
 .brand {
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 
 .logo {
@@ -337,10 +333,6 @@ function navigateTo(path) {
 /* Responsive */
 @media (max-width: 768px) {
   .desktop-nav {
-    display: none;
-  }
-
-  .desktop-only {
     display: none !important;
   }
 
@@ -358,6 +350,22 @@ function navigateTo(path) {
 
   .mobile-menu {
     display: block;
+  }
+
+  .searchbar {
+    flex: 1;
+    margin: 0 12px;
+    max-width: none;
+  }
+
+  .searchbar input {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .searchbar button {
+    padding: 6px 12px;
+    font-size: 13px;
   }
 
   .header {

@@ -147,8 +147,4 @@ onMounted(fetchBoard)
 .card-subtle {
   background: #fdfdfd;
 }
-
-.error {
-  background-color: #ffebee;
-}
 </style>
