@@ -4,7 +4,7 @@
       <header class="editor-header">
         <h1>Design your mooodboard</h1>
         <p class="small-muted">
-          Les éléments sont empilés avec leur z-index (plus le nombre est grand, plus l’élément est “au-dessus”).
+         Crée un moodboard personnalisé avec les contenus de ton choix.
         </p>
       </header>
 
@@ -93,8 +93,59 @@ function reset() {
 }
 
 function saveBoard() {
+  // Créer un canvas temporaire pour capturer la visualisation
+  const tempCanvas = document.createElement('canvas')
+  const ctx = tempCanvas.getContext('2d')
+  
+  // Dimensions du canvas (même taille que le canvas visible)
+  const canvasEl = canvas.value
+  const rect = canvasEl?.getBoundingClientRect()
+  tempCanvas.width = rect?.width || 520
+  tempCanvas.height = rect?.height || 280
+  
+  // Fond du canvas
+  ctx.fillStyle = '#e5e7eb'
+  ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
+  
+  // Dessiner chaque élément sur le canvas temporaire
+  elements.value.forEach(el => {
+    ctx.save()
+    
+    // Position et taille de l'élément
+    const elWidth = 140
+    const elHeight = 90
+    
+    // Dessiner un rectangle coloré selon le type
+    const colors = {
+      text: '#a78bfa',
+      image: '#60a5fa',
+      audio: '#f472b6',
+      video: '#34d399'
+    }
+    ctx.fillStyle = colors[el.type] || '#9ca3af'
+    ctx.fillRect(el.x, el.y, elWidth, elHeight)
+    
+    // Bordure
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 2
+    ctx.strokeRect(el.x, el.y, elWidth, elHeight)
+    
+    // Texte du type
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 12px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(el.type.toUpperCase(), el.x + elWidth / 2, el.y + elHeight / 2)
+    
+    ctx.restore()
+  })
+  
+  // Convertir le canvas en image base64
+  const thumbnail = tempCanvas.toDataURL('image/png')
+  
   const boardData = {
     elements: elements.value,
+    thumbnail: thumbnail,
     savedAt: new Date().toISOString()
   }
   localStorage.setItem('moood_board_draft', JSON.stringify(boardData))
@@ -160,15 +211,64 @@ function onMouseUp() {
   isDragging.value = false
 }
 
+// --- Détection de shake mobile (accéléromètre) ---
+let lastShake = 0
+const SHAKE_THRESHOLD = 15
+const SHAKE_COOLDOWN = 1000 // ms entre deux shakes
+
+function randomizeElements() {
+  const rect = canvas.value?.getBoundingClientRect()
+  if (!rect || elements.value.length === 0) return
+  
+  const canvasWidth = rect.width
+  const canvasHeight = rect.height
+  const elWidth = 140
+  const elHeight = 90
+  
+  // Mélanger aléatoirement les positions de tous les éléments
+  elements.value.forEach(el => {
+    el.x = Math.random() * (canvasWidth - elWidth)
+    el.y = Math.random() * (canvasHeight - elHeight)
+  })
+  
+  // Feedback visuel (optionnel)
+  console.log('🎲 Elements randomized!')
+}
+
+function handleDeviceMotion(event) {
+  const acceleration = event.accelerationIncludingGravity
+  if (!acceleration) return
+  
+  const { x, y, z } = acceleration
+  const totalAcceleration = Math.sqrt(x * x + y * y + z * z)
+  
+  // Détecter un mouvement brusque (shake)
+  const now = Date.now()
+  if (totalAcceleration > SHAKE_THRESHOLD && now - lastShake > SHAKE_COOLDOWN) {
+    lastShake = now
+    randomizeElements()
+  }
+}
+
 onMounted(() => {
   loadBoard()
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
+  
+  // Activer la détection de shake sur mobile
+  if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', handleDeviceMotion)
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousemove', onMouseMove)
   document.removeEventListener('mouseup', onMouseUp)
+  
+  // Nettoyer l'écouteur de shake
+  if (window.DeviceMotionEvent) {
+    window.removeEventListener('devicemotion', handleDeviceMotion)
+  }
 })
 </script>
 
@@ -187,7 +287,8 @@ onUnmounted(() => {
 
 .editor-header h1 {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size: 80px;
+  font-weight: 100;
 }
 
 .editor-body {
@@ -308,6 +409,9 @@ onUnmounted(() => {
   .editor {
     padding: 16px;
   }
+
+  .editor-header h1 {
+    font-size: 52px;    line-height: 1.2;  }
 
   .canvas-wrapper {
     padding: 16px;

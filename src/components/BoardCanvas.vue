@@ -257,5 +257,11 @@ function clamp(value, min, max) {
 .reset-btn {
   border-color: var(--muted-border);
 }
+
+@media (max-width: 768px) {
+  .canvas-header h3 {
+    font-size: 24px;
+  }
+}
 </style>
 

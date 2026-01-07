@@ -123,7 +123,7 @@ onMounted(fetchBoard)
 /* Responsive */
 @media (max-width: 768px) {
   .board-header h1 {
-    font-size: 24px;
+    font-size: 28px;
   }
 
   .board-main {

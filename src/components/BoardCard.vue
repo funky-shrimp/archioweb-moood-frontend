@@ -75,8 +75,13 @@ const router = useRouter()
 const likesCount = ref(props.board.likesCount ?? 0)
 const commentsCount = ref(props.board.commentsCount ?? 0)
 
-// Première image trouvée dans les éléments du board (sert de vignette)
+// Utiliser le thumbnail capturé, sinon fallback sur la première image
 const firstImage = computed(() => {
+  // Priorité au thumbnail capturé lors de la sauvegarde
+  if (props.board.thumbnail) {
+    return props.board.thumbnail
+  }
+  // Sinon, chercher la première image dans les éléments
   const el = (props.board.elements || []).find(e => e.type === 'image')
   return el?.src || ''
 })
