@@ -9,7 +9,7 @@
     <div class="board-header">
       <img class="owner-avatar" :src="ownerAvatar" alt="avatar" v-if="board?.owner" />
       <div class="owner-meta">
-        <div class="owner-name">{{ board?.owner?.username || 'unknown' }}</div>
+        <div class="owner-name">{{ board?.user || 'unknown' }}</div>
         <div class="owner-sub small-muted">{{ boardSubtitle }}</div>
       </div>
       <div class="spacer"></div>
@@ -47,7 +47,7 @@
         <span class="heart">♡</span> <span class="count">{{ likesCount }}</span>
       </button>
       <button class="icon-btn" @click.stop="openComments">
-        💬 <span class="count">{{ commentsCount }}</span>
+        💬
       </button>
     </div>
   </article>
@@ -73,7 +73,6 @@ const router = useRouter()
 
 // Compteurs locaux, initialisés à partir des données du board
 const likesCount = ref(props.board.likesCount ?? 0)
-const commentsCount = ref(props.board.commentsCount ?? 0)
 
 // Première image trouvée dans les éléments du board (sert de vignette)
 const firstImage = computed(() => {

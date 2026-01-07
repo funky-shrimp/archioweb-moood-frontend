@@ -55,11 +55,11 @@ async function toggle() {
   loading.value = true
   try {
     if (liked.value) {
-      await api.post(`/boards/${props.boardId}/unlike`)
+      await api.boards.like(props.boardId)
       liked.value = false
       count.value = Math.max(0, count.value - 1)
     } else {
-      await api.post(`/boards/${props.boardId}/like`)
+      await api.boards.unlike(props.boardId)
       liked.value = true
       count.value = count.value + 1
     }
