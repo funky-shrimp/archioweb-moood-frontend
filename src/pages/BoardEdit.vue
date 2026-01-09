@@ -8,6 +8,29 @@
         </p>
       </header>
 
+      <div class="form-section">
+        <div class="form-group">
+          <label for="board-title">Titre de votre moodboard</label>
+          <input
+            id="board-title"
+            v-model="title"
+            type="text"
+            placeholder="Ex: Mon voyage en Thaïlande"
+            class="form-input"
+          />
+        </div>
+        <div class="form-group">
+          <label for="board-description">Description</label>
+          <textarea
+            id="board-description"
+            v-model="description"
+            placeholder="Décrivez votre moodboard..."
+            class="form-textarea"
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
       <div class="editor-body">
         <div class="canvas-wrapper">
           <div class="canvas-toolbar">
@@ -66,6 +89,8 @@ const elements = ref([])
 const selectedElement = ref(null)
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
+const title = ref('')
+const description = ref('')
 
 function add(type) {
   const maxZ = elements.value.length ? Math.max(...elements.value.map(e => e.z)) : 0
@@ -87,6 +112,8 @@ function add(type) {
 
 function reset() {
   if (!confirm('Clear all elements?')) return
+  title.value = ''
+  description.value = ''
   elements.value = []
   selectedElement.value = null
   localStorage.removeItem('moood_board_draft')
@@ -144,6 +171,8 @@ function saveBoard() {
   const thumbnail = tempCanvas.toDataURL('image/png')
   
   const boardData = {
+    title: title.value,
+    description: description.value,
     elements: elements.value,
     thumbnail: thumbnail,
     savedAt: new Date().toISOString()
@@ -159,6 +188,8 @@ function loadBoard() {
   if (saved) {
     try {
       const boardData = JSON.parse(saved)
+      title.value = boardData.title || ''
+      description.value = boardData.description || ''
       elements.value = boardData.elements || []
     } catch (err) {
       console.error('Failed to load board:', err)
@@ -378,6 +409,48 @@ onUnmounted(() => {
 
 .label {
   padding: 4px 8px;
+}
+
+.form-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .toolbar {
