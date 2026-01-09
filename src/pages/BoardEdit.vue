@@ -262,7 +262,7 @@ function randomizeElements() {
     el.y = Math.random() * (canvasHeight - elHeight)
   })
   
-  // Feedback visuel (optionnel)
+  // Feedback visuel (optionnel)e
   console.log('🎲 Elements randomized!')
 }
 
