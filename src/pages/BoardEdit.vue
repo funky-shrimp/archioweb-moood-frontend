@@ -49,7 +49,7 @@
               class="canvas-el"
               :class="[el.type, { selected: selectedElement === el.id }]"
               :style="styleFor(el)"
-              @mousedown="startDrag(el, $event)"
+              @pointerdown="startDrag(el, $event)"
             >
               <span class="label">
                 {{ el.type.toUpperCase() }} • z={{ el.z }}
@@ -217,7 +217,7 @@ function startDrag(el, event) {
   }
 }
 
-function onMouseMove(event) {
+function onPointerMove(event) {
   if (!isDragging.value || !selectedElement.value) return
   
   const rect = canvas.value.getBoundingClientRect()
@@ -238,8 +238,11 @@ function onMouseMove(event) {
   }
 }
 
-function onMouseUp() {
+function onPointerUp(event) {
   isDragging.value = false
+  try {
+    event?.target?.releasePointerCapture?.(event.pointerId)
+  } catch {}
 }
 
 // --- Détection de shake mobile (accéléromètre) ---
@@ -283,8 +286,9 @@ function handleDeviceMotion(event) {
 
 onMounted(() => {
   loadBoard()
-  document.addEventListener('mousemove', onMouseMove)
-  document.addEventListener('mouseup', onMouseUp)
+  // Écouteurs pointer pour gérer souris + tactile
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp)
   
   // Activer la détection de shake sur mobile
   if (window.DeviceMotionEvent) {
@@ -293,8 +297,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', onMouseMove)
-  document.removeEventListener('mouseup', onMouseUp)
+  document.removeEventListener('pointermove', onPointerMove)
+  document.removeEventListener('pointerup', onPointerUp)
   
   // Nettoyer l'écouteur de shake
   if (window.DeviceMotionEvent) {
@@ -365,6 +369,7 @@ onUnmounted(() => {
   background: #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
+  touch-action: none;
 }
 
 .canvas-el {
@@ -380,6 +385,7 @@ onUnmounted(() => {
   cursor: move;
   user-select: none;
   transition: box-shadow 0.2s ease;
+  touch-action: none;
 }
 
 .canvas-el:hover {
