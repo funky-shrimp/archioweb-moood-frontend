@@ -60,7 +60,11 @@ async function toggle() {
       console.log("trying to like")
       await api.boards.like(props.boardId)
 
-      wsClient.rpc('like',{username: props.username, from: auth.username})
+      wsClient.rpc('like',{username: props.username, from: auth.username}).then(() => {
+        console.log('Like notification sent via WebSocket')
+      }).catch((err) => {
+        console.error('Failed to send like notification via WebSocket:', err)
+      })
 
       liked.value = false
       count.value = Math.max(0, count.value - 1)
