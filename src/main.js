@@ -14,10 +14,6 @@ import './assets/styles.css'
 
 const myApp = createApp(App)
 
-// À enlever quand le auth est fonctionnel
-localStorage.setItem('auth_token', 'dev-token')
- localStorage.setItem('auth_user', JSON.stringify({ _id: 'dev', username: 'dev' }))
-// location.reload()
 
 myApp.use(Quasar, {
   plugins: {}, // import Quasar plugins and add here

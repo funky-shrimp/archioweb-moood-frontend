@@ -22,7 +22,7 @@
       <button class="nav-btn" @click="router.push('/explore')">Explore</button>
       <!-- Si un user est connecté : lien vers son profil + bouton Logout -->
       <template v-if="auth.user">
-        <button class="nav-btn" @click="router.push(`/profile/${auth.user._id}`)">{{ auth.user.username }}</button>
+        <button class="nav-btn" @click="router.push(`/profile/${auth.user._id}`)">{{ auth.user }}</button>
         <button class="nav-btn logout-btn" @click="logout">Logout</button>
       </template>
       <!-- Sinon : liens Login / Signup -->
@@ -78,10 +78,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { useAuth, useAuthStore } from '../stores/auth'
 
 // Store d’auth pour savoir si un user est loggé
-const auth = useAuthStore()
+const auth = useAuth()
 const router = useRouter()
 
 // Texte de la barre de recherche
@@ -99,7 +99,7 @@ function onSearch() {
 function logout() {
   auth.clearAuth()
   closeMenu()
-  router.push('/')
+  router.push('/login')
 }
 
 // Gestion du menu mobile

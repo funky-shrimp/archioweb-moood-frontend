@@ -3,27 +3,28 @@
     <div class="auth-container">
       <div class="auth-box">
         <h2 class="auth-title">Signup</h2>
-        
+
         <form @submit.prevent="onSubmit" class="auth-form">
           <div class="form-group">
             <label for="username">Username</label>
             <input id="username" v-model="form.username" required />
           </div>
-          
+
           <div class="form-group">
             <label for="email">e-mail address</label>
             <input id="email" v-model="form.email" type="email" required />
           </div>
-          
+
           <div class="form-group">
             <label for="password">Password</label>
-            <input id="password" v-model="form.password" type="password" required minlength="6" />
+            <input id="password" v-model="form.password" type="password" required minlength="8" />
           </div>
 
           <div class="form-group">
             <label for="avatar">Profil Picture</label>
             <div class="avatar-upload">
-              <input id="avatar" type="file" accept="image/*" @change="onAvatarChange" style="display:none" ref="fileInput" />
+              <input id="avatar" type="file" accept="image/*" @change="onAvatarChange" style="display:none"
+                ref="fileInput" />
               <button type="button" class="file-btn" @click="$refs.fileInput.click()">add a file</button>
               <div class="avatar-preview">
                 <img v-if="avatarPreview" :src="avatarPreview" alt="avatar" />
@@ -31,9 +32,9 @@
               </div>
             </div>
           </div>
-          
+
           <div v-if="error" class="error-message">{{ error }}</div>
-          
+
           <button type="submit" class="submit-btn">Signup</button>
         </form>
       </div>
@@ -73,10 +74,9 @@ async function onSubmit() {
   }
 
   try {
-    const res = await api.post('/auth/register', { username: form.username, email: form.email, password: form.password })
-    const { token, user } = res.data
-    auth.setAuth(token, user)
-    router.push('/explore')
+    console.log(form.email + " " + form.password + " " + form.username)
+    const res = await api.auth.register({ "username": form.username, "email": form.email, "password": form.password })
+    router.push('/login')
   } catch (err) {
     error.value = err.response?.data?.message || 'Signup failed'
   }
@@ -102,7 +102,7 @@ async function onSubmit() {
   background: #fff;
   border-radius: 12px;
   padding: 48px 40px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .auth-title {

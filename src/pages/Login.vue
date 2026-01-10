@@ -6,8 +6,8 @@
         
         <form @submit.prevent="onSubmit" class="auth-form">
           <div class="form-group">
-            <label for="email">e-mail address</label>
-            <input id="email" v-model="form.email" type="email" required />
+           <label for="username">Username</label>
+            <input id="username" v-model="form.username" required />
           </div>
           
           <div class="form-group">
@@ -38,15 +38,16 @@ const error = ref('')
 
 async function onSubmit() {
   error.value = ''
-  if (!form.email || !form.password) {
-    error.value = 'Please provide email and password.'
+  if (!form.username || !form.password) {
+    error.value = 'Please provide username and password.'
     return
   }
 
   try {
-    const res = await api.post('/auth/login', { email: form.email, password: form.password })
-    const { token, user } = res.data
-    auth.setAuth(token, user)
+    const res = await api.auth.login({ username: form.username, password: form.password })
+    console.log(res);
+    const { token } = res.data
+    auth.setAuth(token, form.username)
     router.push({ path: (router.currentRoute.value.query.redirect) || '/explore' })
   } catch (err) {
     error.value = err.response?.data?.message || 'Login failed'
