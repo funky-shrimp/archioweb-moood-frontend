@@ -25,10 +25,10 @@
       <ul v-else>
         <li v-for="c in comments" :key="c._id" class="comment-item">
           <div class="meta">
-            <strong>{{ c.author?.username || 'anon' }}</strong>
+            <strong>{{ c.authorName || 'anon' }}</strong>
             <small class="ts">{{ formatDate(c.createdAt) }}</small>
           </div>
-          <div class="text">{{ c.text }}</div>
+          <div class="text">{{ c.content }}</div>
           <div class="c-actions">
             <!-- Le bouton Delete n'apparaît que pour l'auteur du commentaire -->
             <button v-if="isOwn(c)" @click="del(c._id)" class="btn-small">Delete</button>
@@ -77,15 +77,15 @@ async function fetchComments() {
 }
 
 // Vérifie si le commentaire appartient à l'utilisateur connecté
-function isOwn(c) {
-  return auth.user && c.author && c.author._id === auth.user._id
+function isOwn(c) {  
+  return auth.$state.user === c.authorName
 }
 
 // Supprime un commentaire
 async function del(id) {
   if (!confirm('Supprimer ce commentaire ?')) return
   try {
-    await api.boards.deleteComment(props.boardId, id)
+    await api.boards.deleteComment(id)
     comments.value = comments.value.filter(c => c._id !== id)
     emit('deleted', id)
   } catch (err) {

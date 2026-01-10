@@ -3,20 +3,20 @@
     <div class="auth-container">
       <div class="auth-box">
         <h2 class="auth-title">Login</h2>
-        
+
         <form @submit.prevent="onSubmit" class="auth-form">
           <div class="form-group">
-           <label for="username">Username</label>
+            <label for="username">Username</label>
             <input id="username" v-model="form.username" required />
           </div>
-          
+
           <div class="form-group">
             <label for="password">Password</label>
             <input id="password" v-model="form.password" type="password" required minlength="6" />
           </div>
-          
+
           <div v-if="error" class="error-message">{{ error }}</div>
-          
+
           <button type="submit" class="submit-btn">Login</button>
         </form>
       </div>
@@ -74,7 +74,7 @@ async function onSubmit() {
   background: #fff;
   border-radius: 12px;
   padding: 48px 40px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .auth-title {
