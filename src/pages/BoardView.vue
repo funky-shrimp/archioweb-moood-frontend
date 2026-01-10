@@ -29,6 +29,7 @@
         <div class="action-block">
           <LikeButton
             :boardId="String(board._id)"
+            :username="board.user"
             :initialLiked="board.viewerHasLiked"
             :initialCount="board.likesCount || 0"
           />

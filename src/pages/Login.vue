@@ -29,6 +29,7 @@ import { reactive, ref } from 'vue'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
+import {connectToNotifications} from '@/websocket/wsClient'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -48,6 +49,14 @@ async function onSubmit() {
     console.log(res);
     const { token } = res.data
     auth.setAuth(token, form.username)
+
+    // Connect to WebSocket for notifications
+    connectToNotifications(token).then(() => {
+      console.log('Connected to notifications WebSocket')
+    }).catch((err) => {
+      console.error('Failed to connect to notifications WebSocket:', err)
+    })
+
     router.push({ path: (router.currentRoute.value.query.redirect) || '/explore' })
   } catch (err) {
     error.value = err.response?.data?.message || 'Login failed'

@@ -26,12 +26,14 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
+import {wsClient} from '../websocket/wsClient.js'
 
 // Props :
 //  - boardId : identifiant du board
 //  - initialLiked / initialCount : état initial fourni par le backend
 const props = defineProps({
   boardId: { type: String, required: true },
+  username: { type: String},
   initialLiked: { type: Boolean, default: false },
   initialCount: { type: Number, default: 0 },
 })
@@ -50,15 +52,21 @@ const loading = ref(false)
 async function toggle() {
   if (!auth.token) {
     // Si l'utilisateur n'est pas connecté, on ne like pas (la redirection est gérée ailleurs)
+    console.log("Not logged in, cannot like")
     return
   }
   loading.value = true
   try {
     if (liked.value) {
+      console.log("trying to like")
       await api.boards.like(props.boardId)
+
+      wsClient.rpc('like',{username: props.username, from: auth.username})
+
       liked.value = false
       count.value = Math.max(0, count.value - 1)
     } else {
+      console.log("trying to unlike")
       await api.boards.unlike(props.boardId)
       liked.value = true
       count.value = count.value + 1
