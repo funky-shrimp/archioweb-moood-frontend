@@ -25,5 +25,6 @@ export const useAuthStore = defineStore('auth', {
   },
 })
 
+
 export const useAuth = () => useAuthStore()
 export default useAuthStore
