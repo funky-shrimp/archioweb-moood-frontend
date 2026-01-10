@@ -31,7 +31,7 @@ const api = {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
     }),
-    unlike: (id) => axiosInstance.delete(`/boardsLike/${id}`, {},{
+    unlike: (id) => axiosInstance.delete(`/boardsLike/${id}`,{
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
