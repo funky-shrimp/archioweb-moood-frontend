@@ -31,7 +31,7 @@
             :boardId="String(board._id)"
             :username="board.user"
             :initialLiked="board.viewerHasLiked"
-            :initialCount="board.likesCount || 0"
+            :initialCount="board.likes || 0"
           />
         </div>
       </section>

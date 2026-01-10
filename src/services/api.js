@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
 const api = {
   // Boards
   boards: {
-    list: (token) => axiosInstance.get('/boards', {
+    list: () => axiosInstance.get('/boards', {
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
@@ -26,22 +26,22 @@ const api = {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
     }),
-    like: (id) => axiosInstance.post(`/boards/${id}/like`, {
+    like: (id) => axiosInstance.post(`/boardsLike/${id}`, {},{
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
     }),
-    unlike: (id) => axiosInstance.post(`/boards/${id}/unlike`, {
+    unlike: (id) => axiosInstance.delete(`/boardsLike/${id}`, {},{
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
     }),
-    createComment: (id, body) => axiosInstance.post(`/boards/${id}/comments`, {
+    createComment: (id, content) => axiosInstance.post(`/boards/${id}/comments`, content, {
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
-    }, body),
-    deleteComment: (boardId, commentId) => axiosInstance.delete(`/boards/${boardId}/comments/${commentId}`, {
+    }),
+    deleteComment: (commentId) => axiosInstance.delete(`/comments/${commentId}`, {
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
@@ -62,8 +62,8 @@ const api = {
     },
     register: (body) => axiosInstance.post('/auth/register', body),
   },
-  user:{
-    
+  user: {
+
   }
 }
 

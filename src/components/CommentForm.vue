@@ -38,7 +38,7 @@ async function submit() {
   error.value = null
   try {
     // appel API pour créer un commentaire sur le board
-    const res = await api.boards.createComment(props.boardId, { text: body })
+    const res = await api.boards.createComment(props.boardId, { content: body })
     emit('created', res.data) // le parent peut mettre à jour sa liste
     text.value = '' // on vide le champ
   } catch (err) {
