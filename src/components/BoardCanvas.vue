@@ -200,7 +200,7 @@ function clamp(value, min, max) {
   border-radius: 16px;
   border: 1px solid #ededf2;
   background: radial-gradient(circle at top, #f8f8fb, #f0f2f7);
-  min-height: 520px;
+  min-height: 280px;
   touch-action: none;
   cursor: grab;
 }
@@ -256,6 +256,12 @@ function clamp(value, min, max) {
 
 .reset-btn {
   border-color: var(--muted-border);
+}
+
+@media (max-width: 768px) {
+  .canvas-header h3 {
+    font-size: 24px;
+  }
 }
 </style>
 

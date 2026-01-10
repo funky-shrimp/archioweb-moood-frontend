@@ -147,4 +147,19 @@ onMounted(fetchBoard)
 .card-subtle {
   background: #fdfdfd;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .board-header h1 {
+    font-size: 24px;
+  }
+
+  .board-main {
+    padding: 16px;
+  }
+
+  .board-section {
+    margin-top: 16px;
+  }
+}
 </style>

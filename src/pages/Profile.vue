@@ -19,7 +19,7 @@
               <h1 class="username">{{ profile.username }}</h1>
               <button
                 v-if="isOwn"
-                class="link-btn"
+                class="edit-btn"
                 type="button"
                 @click="openEdit"
               >
@@ -211,14 +211,21 @@ function onSaved(updatedUser) {
   font-size: 14px;
 }
 
-.link-btn {
-  background: none;
-  border: none;
-  color: #4f46e5;
-  font-size: 13px;
+.edit-btn {
+  padding: 6px 14px;
+  background: transparent;
+  color: #1d1d1f;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .profile-stats {
