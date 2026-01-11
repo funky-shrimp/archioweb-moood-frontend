@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { decodeJWT } from '@/services/tokenHelpers'
 
 export const useAuthStore = defineStore('auth', {
   state: () => {
@@ -6,8 +7,12 @@ export const useAuthStore = defineStore('auth', {
     const user = (() => {
       try { return JSON.parse(localStorage.getItem('auth_user')) || null } catch { return null }
     })()
+
+    //add Id from token to user
+    const userId = decodeJWT(token)?.sub || null
+
     console.debug('[auth] init token,user:', token, user) // <-- debug
-    return { token, user }
+    return { token, user, userId }
   },
   actions: {
     setAuth(token, user) {

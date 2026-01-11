@@ -9,12 +9,17 @@
     <div class="board-header">
       <img class="owner-avatar" :src="ownerAvatar" alt="avatar" v-if="board?.owner" />
       <div class="owner-meta">
-        <div class="owner-name">{{ board?.user || 'unknown' }}</div>
+        <!-- link to user profile -->
+        <div class="owner-name" @click.stop="goToProfile">{{ board?.user || 'unknown' }}</div>
         <div class="owner-sub small-muted">{{ boardSubtitle }}</div>
       </div>
       <div class="spacer"></div>
-      <FollowButton v-if="showFollow && board?.owner?._id" :userId="board.owner._id"
-        :initialFollowing="board.owner?.viewerIsFollowing" @toggled.stop />
+      <FollowButton
+        v-if="showFollow && board?.userId"
+        :userId="board.userId"
+        :initialFollowing="board.owner?.viewerIsFollowing"
+        @toggled.stop
+      />
     </div>
 
     <!-- Preview interactif : on peut “tirer” l’image et zoomer à la molette -->
@@ -79,6 +84,11 @@ const ownerAvatar = computed(() => props.board.owner?.avatar || '/placeholder-av
 
 // Sous-titre sous le nom : 3 premiers labels séparés par des puces
 const boardSubtitle = computed(() => (props.board.labels || []).slice(0, 3).join(' • '))
+
+function goToProfile() {
+  if (!props.board?.userId) return
+  router.push(`/profile/${props.board.userId}`)
+}
 
 // Ouvre la page détaillée du board
 function open() {

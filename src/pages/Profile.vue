@@ -9,7 +9,7 @@
             <div class="avatar-circle">
               <!-- Avatar fixture -->
               <span class="avatar-initial">
-                {{ (profile.username || 'U').charAt(0).toUpperCase() }}
+                {{ (profile.username || "U").charAt(0).toUpperCase() }}
               </span>
             </div>
           </div>
@@ -52,7 +52,7 @@
           <div class="boards-header">
             <h2>Boards</h2>
           </div>
-          <UserBoardsList :userId="profile._id" />
+          <UserBoardsList v-if="profile && profile._id" :userId="profile._id" />
         </section>
       </template>
 
@@ -65,75 +65,87 @@
       v-if="showEdit && profile"
       :user="profile"
       @saved="onSaved"
-      @close="showEdit=false"
+      @close="showEdit = false"
     />
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import api from '../services/api'
-import { useAuth } from '../stores/auth'
-import UserBoardsList from '../components/UserBoardsList.vue'
-import FollowButton from '../components/FollowButton.vue'
-import ProfileEdit from '../components/ProfileEdit.vue'
-import { SAMPLE_USERS } from '../_dev/fixtures'
+import { ref, onMounted, computed } from "vue";
+import { useRoute } from "vue-router";
+import api from "../services/api";
+import { useAuth } from "../stores/auth";
+import UserBoardsList from "../components/UserBoardsList.vue";
+import FollowButton from "../components/FollowButton.vue";
+import ProfileEdit from "../components/ProfileEdit.vue";
+import { SAMPLE_USERS } from "../_dev/fixtures";
+import { watch } from "vue";
 
-const route = useRoute()
-const auth = useAuth()
+const route = useRoute();
+const auth = useAuth();
 
-const paramId = route.params.id
-const profile = ref(null)
-const loading = ref(true)
-const showEdit = ref(false)
+const paramId = route.params.id;
+const profile = ref(null);
+const loading = ref(true);
+const showEdit = ref(false);
 
 const isOwn = computed(() => {
-  if (!profile.value) return false
-  return auth.user && profile.value._id === auth.user._id
-})
+  if (!profile.value) return false;
+  return auth.userId === profile.value._id;
+});
 
 function fallbackProfile(id) {
   if (id) {
-    const found = SAMPLE_USERS.find(u => u._id === id)
-    if (found) return found
+    const found = SAMPLE_USERS.find((u) => u._id === id);
+    if (found) return found;
   }
   if (auth.user) {
     return {
       _id: auth.user._id,
       username: auth.user.username,
-      bio: 'Fixture profile (dev)',
-    }
+      bio: "Fixture profile (dev)",
+    };
   }
-  return SAMPLE_USERS[0] || { _id: 'fixture', username: 'Unknown', bio: '' }
+  return SAMPLE_USERS[0] || { _id: "fixture", username: "Unknown", bio: "" };
 }
 
 async function fetchProfile(id) {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = id ? await api.get(`/users/${id}`) : await api.get('/users/me')
-    profile.value = res.data || fallbackProfile(id)
+    const res = await api.user.getById(id);
+    profile.value = res.data || fallbackProfile(id);
+    console.log("Fetched profile:", profile.value);
   } catch (err) {
-    profile.value = fallbackProfile(id)
+    profile.value = fallbackProfile(id);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 onMounted(() => {
-  fetchProfile(paramId)
-})
+  console.log("Profile page for id:", paramId);
+  fetchProfile(paramId);
+});
 
-function openEdit() { showEdit.value = true }
+watch(
+  () => route.params.id,
+  (newId) => {
+    fetchProfile(newId);
+  }
+);
+
+function openEdit() {
+  showEdit.value = true;
+}
 
 function onSaved(updatedUser) {
-  profile.value = { ...profile.value, ...updatedUser }
+  profile.value = { ...profile.value, ...updatedUser };
   // If we edited own profile, update auth store
   if (isOwn.value) {
-    auth.user = profile.value
-    localStorage.setItem('auth_user', JSON.stringify(profile.value))
+    auth.user = profile.value;
+    localStorage.setItem("auth_user", JSON.stringify(profile.value));
   }
-  showEdit.value = false
+  showEdit.value = false;
 }
 </script>
 
