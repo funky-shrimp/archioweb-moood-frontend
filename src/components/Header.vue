@@ -22,7 +22,7 @@
       <button class="nav-btn" @click="router.push('/explore')">Explore</button>
       <!-- Si un user est connecté : lien vers son profil + bouton Logout -->
       <template v-if="auth.user">
-        <button class="nav-btn" @click="router.push(`/profile/${auth.user._id}`)">{{ auth.user }}</button>
+        <button class="nav-btn" @click="router.push(`/profile/${auth.userId}`)">{{ auth.user }}</button>
         <button class="nav-btn logout-btn" @click="logout">Logout</button>
       </template>
       <!-- Sinon : liens Login / Signup -->
@@ -83,6 +83,8 @@ import { useAuth, useAuthStore } from '../stores/auth'
 // Store d’auth pour savoir si un user est loggé
 const auth = useAuth()
 const router = useRouter()
+
+console.log("auth in header ", auth)
 
 // Texte de la barre de recherche
 const q = ref('')

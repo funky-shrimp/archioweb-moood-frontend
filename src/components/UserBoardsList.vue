@@ -57,7 +57,7 @@ const canDelete = computed(() => {
 async function fetchBoards() {
   loading.value = true
   try {
-    const res = await api.get(`/users/${props.userId}/boards`)
+    const res = await api.user.getBoards(props.userId)
     const payload = res.data
     console.debug('user boards payload:', payload)
 
@@ -65,8 +65,8 @@ async function fetchBoards() {
       boards.value = []
     } else if (Array.isArray(payload)) {
       boards.value = payload
-    } else if (Array.isArray(payload.boards)) {
-      boards.value = payload.boards
+    } else if (Array.isArray(payload.items)) {
+      boards.value = payload.items
     } else if (typeof payload === 'string') {
       try {
         const parsed = JSON.parse(payload)
