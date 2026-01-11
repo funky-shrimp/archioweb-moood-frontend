@@ -22,6 +22,12 @@ const api = {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
     }),
+    delete: (id) =>
+      axiosInstance.delete(`/boards/${id}`, {
+        headers: {
+          Authorization: `Bearer ${useAuth().$state.token}`,
+        },
+      }),
     get: (id) =>
       axiosInstance.get(`/boards/${id}`, {
         headers: {
