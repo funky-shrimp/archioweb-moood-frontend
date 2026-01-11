@@ -1,514 +1,823 @@
 <template>
-  <section class="page page-board-edit">
-    <div class="editor card">
-      <header class="editor-header">
-        <h1>Design your mooodboard</h1>
-        <p class="small-muted">
-         Crée un moodboard personnalisé avec les contenus de ton choix.
-        </p>
-      </header>
+  <div class="app-layout">
 
-      <div class="form-section">
-        <div class="form-group">
-          <label for="board-title">Titre de votre moodboard</label>
-          <input
-            id="board-title"
-            v-model="title"
-            type="text"
-            placeholder="Ex: Mon voyage en Thaïlande"
-            class="form-input"
-          />
+    <!-- Input fichier caché -->
+    <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="onFileSelected" />
+
+    <header class="top-bar" :class="{ 'hidden': !showTopBar }">
+      <div class="header-content">
+        <div class="input-group">
+          <input v-model="title" class="input-title" type="text" placeholder="Nom du moodboard">
+          <input v-model="description" class="input-desc" type="text" placeholder="Ajouter une courte description...">
         </div>
-        <div class="form-group">
-          <label for="board-description">Description</label>
-          <textarea
-            id="board-description"
-            v-model="description"
-            placeholder="Décrivez votre moodboard..."
-            class="form-textarea"
-            rows="3"
-          ></textarea>
+
+        <div class="header-actions">
+          <button class="back-btn" @click="goBack" title="Retour">
+            ← Retour
+          </button>
+          <button class="icon-btn" @click="reset" title="Tout effacer">×</button>
+          <button class="icon-btn save-btn" @click="saveBoard" title="Sauvegarder">
+            💾
+          </button>
+          <button class="icon-btn publish-btn" @click="publishBoard" title="Publier">
+            🚀
+          </button>
         </div>
       </div>
+    </header>
 
-      <div class="editor-body">
-        <div class="canvas-wrapper">
-          <div class="canvas-toolbar">
-            <button type="button" class="icon-btn" @click="reset" title="Clear all">
-              ×
-            </button>
-            <button type="button" class="icon-btn" @click="saveBoard" title="Save board">
-              💾
-            </button>
-          </div>
+    <button class="floating-toggle" @click="showTopBar = !showTopBar"
+      :title="showTopBar ? 'Masquer les options' : 'Afficher les options'">
+      {{ showTopBar ? '▲' : '▼' }}
+    </button>
 
-          <div class="canvas" ref="canvas">
-            <div
-              v-for="el in elements"
-              :key="el.id"
-              class="canvas-el"
-              :class="[el.type, { selected: selectedElement === el.id }]"
-              :style="styleFor(el)"
-              @mousedown="startDrag(el, $event)"
-            >
-              <span class="label">
-                {{ el.type.toUpperCase() }} • z={{ el.z }}
-              </span>
+    <main class="main-stage">
+      <div class="canvas-wrapper">
+        <div class="canvas-container" ref="canvasRef">
+
+          <div class="canvas-artboard" ref="canvas">
+            <div v-if="elements.length === 0" class="empty-hint">
+              <p>Zone 9:16</p>
+              <small>Ajoutez des éléments ci-dessous</small>
+            </div>
+
+            <div v-for="el in elements" :key="el.id" class="board-item"
+              :class="[el.type, { selected: selectedElement === el.id, editing: editingId === el.id }]"
+              :style="styleFor(el)" @mousedown.stop="startDrag(el, $event)" @touchstart.stop="startDrag(el, $event)">
+              <!-- Élément texte éditable -->
+              <template v-if="el.type === 'text'">
+                <div v-if="editingId === el.id" class="text-editor" @click.stop>
+                  <textarea :value="el.content" @input="updateText(el, $event.target.value)" @blur="finishEdit(el)"
+                    @keydown.escape="finishEdit(el)" class="text-input" autofocus></textarea>
+                </div>
+                <div v-else class="text-content" @click.stop="startEdit(el, $event)">
+                  {{ el.content || 'Cliquez pour éditer' }}
+                </div>
+              </template>
+
+              <!-- Élément image -->
+              <template v-else-if="el.type === 'image'">
+                <div v-if="!el.src" class="image-placeholder" @click.stop="pendingImageId = el.id; fileInput?.click()">
+                  <span>📷 Cliquez pour charger</span>
+                </div>
+                <img v-else :src="el.src" :alt="el.id" class="image-content" />
+              </template>
+
+              <!-- Autres types d'éléments -->
+              <span v-else class="item-label">{{ el.type }}</span>
             </div>
           </div>
-        </div>
 
-        <div class="toolbar">
-          <button type="button" class="tool-btn" @click="add('text')">
-            <span class="icon">T</span>
-            <span>Text</span>
-          </button>
-          <button type="button" class="tool-btn" @click="add('image')">
-            <span class="icon">🖼</span>
-            <span>Image</span>
-          </button>
-          <button type="button" class="tool-btn" @click="add('audio')">
-            <span class="icon">🔊</span>
-            <span>Audio</span>
-          </button>
-          <button type="button" class="tool-btn" @click="add('video')">
-            <span class="icon">▶</span>
-            <span>Video</span>
-          </button>
         </div>
       </div>
-    </div>
-  </section>
+    </main>
+
+    <footer class="bottom-toolbar">
+      <div class="tools-grid">
+        <button class="tool-btn" @click="add('text')">
+          <span class="icon">T</span>
+          <span class="label">Text</span>
+        </button>
+        <button class="tool-btn" @click="add('image')">
+          <span class="icon">🖼</span>
+          <span class="label">Image</span>
+        </button>
+      </div>
+    </footer>
+
+  </div>
 </template>
 
 <script setup>
+import api from '@/services/api'
+import html2canvas from 'html2canvas'
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const canvas = ref(null)
+const canvasRef = ref(null)
+const fileInput = ref(null)
+const pendingImageId = ref(null)
 const elements = ref([])
 const selectedElement = ref(null)
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 const title = ref('')
 const description = ref('')
+const showTopBar = ref(true)
+const editingId = ref(null)
 
+// --- Logique d'ajout ---
 function add(type) {
-  const maxZ = elements.value.length ? Math.max(...elements.value.map(e => e.z)) : 0
-  const z = maxZ + 1
   const rect = canvas.value?.getBoundingClientRect()
-  const width = rect?.width || 480
-  const height = rect?.height || 320
-  const x = 40 + Math.random() * (width - 160)
-  const y = 40 + Math.random() * (height - 160)
+  const boardW = rect?.width || 360
+  const boardH = rect?.height || 640
 
-  elements.value.push({
-    id: `${type}-${Date.now()}-${z}`,
+  const w = boardW * 0.4
+  const h = type === 'text' ? 50 : w * 0.6
+
+  const maxZ = elements.value.length ? Math.max(...elements.value.map(e => e.z)) : 0
+
+  const newElement = {
+    id: `${type}-${Date.now()}`,
     type,
-    z,
-    x,
-    y,
-  })
-}
-
-function reset() {
-  if (!confirm('Clear all elements?')) return
-  title.value = ''
-  description.value = ''
-  elements.value = []
-  selectedElement.value = null
-  localStorage.removeItem('moood_board_draft')
-}
-
-function saveBoard() {
-  // Créer un canvas temporaire pour capturer la visualisation
-  const tempCanvas = document.createElement('canvas')
-  const ctx = tempCanvas.getContext('2d')
-  
-  // Dimensions du canvas (même taille que le canvas visible)
-  const canvasEl = canvas.value
-  const rect = canvasEl?.getBoundingClientRect()
-  tempCanvas.width = rect?.width || 520
-  tempCanvas.height = rect?.height || 280
-  
-  // Fond du canvas
-  ctx.fillStyle = '#e5e7eb'
-  ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height)
-  
-  // Dessiner chaque élément sur le canvas temporaire
-  elements.value.forEach(el => {
-    ctx.save()
-    
-    // Position et taille de l'élément
-    const elWidth = 140
-    const elHeight = 90
-    
-    // Dessiner un rectangle coloré selon le type
-    const colors = {
-      text: '#a78bfa',
-      image: '#60a5fa',
-      audio: '#f472b6',
-      video: '#34d399'
-    }
-    ctx.fillStyle = colors[el.type] || '#9ca3af'
-    ctx.fillRect(el.x, el.y, elWidth, elHeight)
-    
-    // Bordure
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 2
-    ctx.strokeRect(el.x, el.y, elWidth, elHeight)
-    
-    // Texte du type
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 12px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(el.type.toUpperCase(), el.x + elWidth / 2, el.y + elHeight / 2)
-    
-    ctx.restore()
-  })
-  
-  // Convertir le canvas en image base64
-  const thumbnail = tempCanvas.toDataURL('image/png')
-  
-  const boardData = {
-    title: title.value,
-    description: description.value,
-    elements: elements.value,
-    thumbnail: thumbnail,
-    savedAt: new Date().toISOString()
+    z: maxZ + 1,
+    x: (boardW / 2) - (w / 2) + (Math.random() * 20 - 10),
+    y: (boardH / 2) - (h / 2) + (Math.random() * 20 - 10),
+    w,
+    h,
+    content: type === 'text' ? 'Cliquez pour éditer' : '',
+    src: '' // Pour les images
   }
-  localStorage.setItem('moood_board_draft', JSON.stringify(boardData))
-  
-  // Confirmation visuelle
-  alert('Board saved successfully!')
-}
 
-function loadBoard() {
-  const saved = localStorage.getItem('moood_board_draft')
-  if (saved) {
-    try {
-      const boardData = JSON.parse(saved)
-      title.value = boardData.title || ''
-      description.value = boardData.description || ''
-      elements.value = boardData.elements || []
-    } catch (err) {
-      console.error('Failed to load board:', err)
-    }
+  elements.value.push(newElement)
+
+  // Si c'est du texte, activer l'édition immédiatement
+  if (type === 'text') {
+    editingId.value = newElement.id
+  } else if (type === 'image') {
+    // Si c'est une image, déclencher le sélecteur de fichier
+    pendingImageId.value = newElement.id
+    fileInput.value?.click()
   }
 }
 
+// --- Gestion des images ---
+function onFileSelected(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const el = elements.value.find(elem => elem.id === pendingImageId.value)
+    if (el) {
+      el.src = e.target.result
+    }
+    pendingImageId.value = null
+  }
+  reader.readAsDataURL(file)
+
+  // Réinitialiser le input
+  event.target.value = ''
+}
+
+// --- Style dynamique ---
 function styleFor(el) {
   return {
-    left: `${el.x}px`,
-    top: `${el.y}px`,
+    transform: `translate(${el.x}px, ${el.y}px)`,
+    width: `${el.w}px`,
+    height: `${el.h}px`,
     zIndex: el.z,
   }
 }
 
+// --- Édition de texte ---
+function startEdit(el, event) {
+  event.stopPropagation()
+  editingId.value = el.id
+  selectedElement.value = el.id
+}
+
+function finishEdit(el) {
+  editingId.value = null
+}
+
+function updateText(el, newContent) {
+  el.content = newContent
+}
+
+// --- Drag & Drop (Support Souris + Tactile) ---
 function startDrag(el, event) {
-  event.preventDefault()
+  if (editingId.value) return
+  if (event.cancelable) event.preventDefault();
+
   selectedElement.value = el.id
   isDragging.value = true
-  
+
+  const clientX = event.touches ? event.touches[0].clientX : event.clientX
+  const clientY = event.touches ? event.touches[0].clientY : event.clientY
+
   const rect = canvas.value.getBoundingClientRect()
+
   dragOffset.value = {
-    x: event.clientX - rect.left - el.x,
-    y: event.clientY - rect.top - el.y
+    x: clientX - rect.left - el.x,
+    y: clientY - rect.top - el.y
   }
 }
 
-function onMouseMove(event) {
+function onMove(event) {
   if (!isDragging.value || !selectedElement.value) return
-  
+
+  const clientX = event.touches ? event.touches[0].clientX : event.clientX
+  const clientY = event.touches ? event.touches[0].clientY : event.clientY
+
   const rect = canvas.value.getBoundingClientRect()
-  const element = elements.value.find(e => e.id === selectedElement.value)
-  
-  if (element) {
-    let newX = event.clientX - rect.left - dragOffset.value.x
-    let newY = event.clientY - rect.top - dragOffset.value.y
-    
-    // Contraintes pour rester dans le canvas
-    const elWidth = 140
-    const elHeight = 90
-    newX = Math.max(0, Math.min(newX, rect.width - elWidth))
-    newY = Math.max(0, Math.min(newY, rect.height - elHeight))
-    
-    element.x = newX
-    element.y = newY
+  const el = elements.value.find(e => e.id === selectedElement.value)
+
+  if (el) {
+    let newX = clientX - rect.left - dragOffset.value.x
+    let newY = clientY - rect.top - dragOffset.value.y
+
+    newX = Math.max(0, Math.min(newX, rect.width - el.w))
+    newY = Math.max(0, Math.min(newY, rect.height - el.h))
+
+    el.x = newX
+    el.y = newY
   }
 }
 
-function onMouseUp() {
+function onEnd() {
   isDragging.value = false
 }
 
-// --- Détection de shake mobile (accéléromètre) ---
-let lastShake = 0
-const SHAKE_THRESHOLD = 15
-const SHAKE_COOLDOWN = 1000 // ms entre deux shakes
+// --- Actions Globales ---
+function goBack() {
+  const hasContent = title.value || description.value || elements.value.length > 0
 
-function randomizeElements() {
-  const rect = canvas.value?.getBoundingClientRect()
-  if (!rect || elements.value.length === 0) return
-  
-  const canvasWidth = rect.width
-  const canvasHeight = rect.height
-  const elWidth = 140
-  const elHeight = 90
-  
-  // Mélanger aléatoirement les positions de tous les éléments
-  elements.value.forEach(el => {
-    el.x = Math.random() * (canvasWidth - elWidth)
-    el.y = Math.random() * (canvasHeight - elHeight)
+  if (hasContent) {
+    const confirmed = confirm('Êtes-vous sûr de vouloir quitter sans sauvegarder ?')
+    if (confirmed) {
+      router.back()
+    }
+  } else {
+    router.back()
+  }
+}
+
+function reset() {
+  if (confirm("Tout effacer ?")) {
+    elements.value = []
+    title.value = ""
+    description.value = ""
+  }
+}
+
+function saveBoard() {
+  console.log("Saving layout...", {
+    title: title.value,
+    desc: description.value,
+    elements: elements.value
   })
-  
-  // Feedback visuel (optionnel)e
-  console.log('🎲 Elements randomized!')
+  alert("Sauvegarde effectuée (voir console)")
 }
 
-function handleDeviceMotion(event) {
-  const acceleration = event.accelerationIncludingGravity
-  if (!acceleration) return
-  
-  const { x, y, z } = acceleration
-  const totalAcceleration = Math.sqrt(x * x + y * y + z * z)
-  
-  // Détecter un mouvement brusque (shake)
-  const now = Date.now()
-  if (totalAcceleration > SHAKE_THRESHOLD && now - lastShake > SHAKE_COOLDOWN) {
-    lastShake = now
-    randomizeElements()
+async function publishBoard() {
+  if (!title.value) {
+    alert("Veuillez entrer un titre avant de publier")
+    return
+  }
+
+  try {
+    // Créer un canvas temporaire pour capturer exactement ce que l'utilisateur voit
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = 360
+    tempCanvas.height = 640
+    const ctx = tempCanvas.getContext('2d')
+    
+    // Fond gris
+    ctx.fillStyle = '#e5e7eb'
+    ctx.fillRect(0, 0, 360, 640)
+    
+    // Charger toutes les images d'abord
+    const imagePromises = elements.value
+      .filter(el => el.type === 'image' && el.src)
+      .map(el => {
+        return new Promise((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            el._loadedImage = img
+            resolve()
+          }
+          img.onerror = () => resolve()
+          img.src = el.src
+        })
+      })
+    
+    // Attendre que toutes les images soient chargées
+    await Promise.all(imagePromises)
+    
+    // Maintenant dessiner les éléments
+    for (const el of elements.value) {
+      // Dessiner le contenu (SANS fond ni bordure)
+      if (el.type === 'text') {
+        ctx.fillStyle = '#111'
+        ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        
+        const text = el.content || 'Cliquez pour éditer'
+        const maxWidth = el.w - 8
+        
+        // Wrapper de texte
+        const words = text.split(' ')
+        let line = ''
+        let y = el.y + el.h / 2 - 7
+        
+        words.forEach(word => {
+          const testLine = line + word + ' '
+          const metrics = ctx.measureText(testLine)
+          if (metrics.width > maxWidth && line) {
+            ctx.fillText(line.trim(), el.x + el.w / 2, y)
+            line = word + ' '
+            y += 14
+          } else {
+            line = testLine
+          }
+        })
+        if (line.trim()) {
+          ctx.fillText(line.trim(), el.x + el.w / 2, y)
+        }
+      } else if (el.type === 'image') {
+        if (el._loadedImage) {
+          // Dessiner l'image chargée
+          ctx.drawImage(el._loadedImage, el.x, el.y, el.w, el.h)
+        } else {
+          // Placeholder
+          ctx.fillStyle = '#1e40af'
+          ctx.font = '12px -apple-system'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('📷', el.x + el.w / 2, el.y + el.h / 2)
+        }
+      }
+    }
+    
+    const imageUrl = tempCanvas.toDataURL('image/png')
+    
+    console.log("Publishing board...", {
+      title: title.value,
+      description: description.value,
+      elements: elements.value,
+      imageUrl: imageUrl
+    })
+    
+    // Appeler l'API avec l'image
+    await api.boards.create({
+      title: title.value,
+      description: description.value,
+      imageUrl: imageUrl,
+      isPublic: true,
+    })
+    
+    alert("Moodboard publié !")
+    router.back()
+  } catch (e) {
+    console.error("Publication failed:", e)
+    alert("Échec de la publication. Veuillez réessayer.")
   }
 }
 
+// --- Lifecycle ---
 onMounted(() => {
-  loadBoard()
-  document.addEventListener('mousemove', onMouseMove)
-  document.addEventListener('mouseup', onMouseUp)
-  
-  // Activer la détection de shake sur mobile
-  if (window.DeviceMotionEvent) {
-    window.addEventListener('devicemotion', handleDeviceMotion)
-  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onEnd)
+  window.addEventListener('touchmove', onMove, { passive: false })
+  window.addEventListener('touchend', onEnd)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', onMouseMove)
-  document.removeEventListener('mouseup', onMouseUp)
-  
-  // Nettoyer l'écouteur de shake
-  if (window.DeviceMotionEvent) {
-    window.removeEventListener('devicemotion', handleDeviceMotion)
-  }
+  window.removeEventListener('mousemove', onMove)
+  window.removeEventListener('mouseup', onEnd)
+  window.removeEventListener('touchmove', onMove)
+  window.removeEventListener('touchend', onEnd)
 })
 </script>
 
 <style scoped>
-.page {
-  padding: 24px 16px;
-  display: flex;
-  justify-content: center;
+/* RESET & GLOBAL */
+* {
+  box-sizing: border-box;
 }
 
-.editor {
-  width: 100%;
-  max-width: 980px;
-  padding: 24px 24px 28px;
-}
-
-.editor-header h1 {
-  margin: 0 0 6px;
-  font-size: 80px;
-  font-weight: 100;
-}
-
-.editor-body {
-  margin-top: 16px;
-}
-
-.canvas-wrapper {
-  position: relative;
-  border-radius: 18px;
-  border: 1px solid #e5e7eb;
-  background: #f5f5f8;
-  padding: 24px;
-}
-
-.canvas-toolbar {
-  position: absolute;
-  top: 12px;
-  right: 16px;
+.app-layout {
+  /* Prend tout l'écran, pas de scroll global */
+  height: 100vh;
+  width: 100vw;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  z-index: 10;
+  background-color: #ffffff;
+  color: #111;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding-top: 60px;
+  /* Repousser en bas de la navigation */
+  z-index: 1;
+  /* Important : être au-dessus des autres éléments */
 }
 
-.icon-btn {
-  border-radius: 999px;
-  border: 1px solid #d4d4d8;
+/* --- HEADER --- */
+.top-bar {
+  flex: 0 0 auto;
+  padding: 12px 16px;
   background: #fff;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.canvas {
-  position: relative;
-  margin: 0 auto;
-  max-width: 520px;
-  height: 280px;
-  background: #e5e7eb;
-  border-radius: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  z-index: 20;
+  animation: slideDown 0.3s ease-out;
+  max-height: 120px;
   overflow: hidden;
 }
 
-.canvas-el {
-  position: absolute;
-  width: 140px;
-  height: 90px;
-  border-radius: 999px;
+.top-bar.hidden {
+  max-height: 0;
+  padding: 0;
+  border: none;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    max-height: 0;
+    padding: 0;
+    opacity: 0;
+  }
+
+  to {
+    max-height: 120px;
+    padding: 12px 16px;
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    max-height: 120px;
+    padding: 12px 16px;
+    opacity: 1;
+  }
+
+  to {
+    max-height: 0;
+    padding: 0;
+    opacity: 0;
+  }
+}
+
+/* Bouton flottant pour afficher/masquer la top-bar */
+.floating-toggle {
+  position: fixed;
+  top: 72px;
+  /* 60px navbar + 12px offset */
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #111827;
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: white;
+  font-weight: bold;
+}
+
+.floating-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.floating-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Zone cliquable en haut du canvas pour afficher la top-bar */
+.swipe-hint {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 12px;
-  cursor: move;
-  user-select: none;
-  transition: box-shadow 0.2s ease;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 24;
+  transition: opacity 0.2s;
 }
 
-.canvas-el:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.swipe-hint:hover {
+  opacity: 0.8;
 }
 
-.canvas-el.selected {
-  box-shadow: 0 0 0 3px #3b82f6;
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-title {
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
   outline: none;
+  width: 100%;
+  padding: 0;
+  color: #111;
 }
 
-.canvas-el.text {
-  background: #fef9c3;
+.input-title::placeholder {
+  color: #111;
+  opacity: 1;
 }
 
-.canvas-el.image {
-  background: #bfdbfe;
+.input-desc {
+  font-size: 13px;
+  color: #666;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 0;
 }
 
-.canvas-el.audio {
-  background: #ddd6fe;
+.header-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
-.canvas-el.video {
-  background: #fecaca;
-}
-
-.label {
-  padding: 4px 8px;
-}
-
-.form-section {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-}
-
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.form-group label {
-  display: block;
+.back-btn {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 6px;
   color: #374151;
+  transition: background 0.2s;
 }
 
-.form-input,
-.form-textarea {
+.back-btn:hover {
+  background: #e5e7eb;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.icon-btn:hover {
+  background: #e5e7eb;
+}
+
+.save-btn {
+  background: #f3f4f6;
+}
+
+.publish-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.publish-btn:hover {
+  background: #2563eb;
+}
+
+/* --- MAIN STAGE --- */
+.main-stage {
+  flex: 1;
+  /* Prend tout l'espace restant */
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+  /* Important pour flex */
+}
+
+.canvas-wrapper {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d4d4d8;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 500px;
+  /* Limite la largeur sur Desktop pour rester élégant */
+}
+
+.canvas-container {
+  /* MAGIE DU RATIO 9:16 */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+
+  /* Contraintes pour ne jamais déborder */
+  max-height: 100%;
+  max-width: 100%;
+
+  background: #e5e7eb;
+  /* Couleur de fond du canvas */
+  position: relative;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  font-family: inherit;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
+  /* Optionnel : coins arrondis comme un téléphone */
+  overflow: hidden;
 }
 
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
+.canvas-artboard {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* --- ELEMENTS --- */
+.empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.board-item {
+  position: absolute;
+  /* Placement via JS style transform */
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+ 
+  border: 2px solid transparent;
+  transition: box-shadow 0.2s;
+}
+
+.board-item:active {
+  cursor: grabbing;
+}
+
+.board-item.selected {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  z-index: 1000 !important;
 }
 
-.toolbar {
+/* Couleurs des textes */
+.board-item.text {
+  color: #111;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.board-item.text.editing {
+  background: #fff;
+  border-color: #fbbf24;
+}
+
+.text-editor {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.text-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111;
+  resize: none;
+  padding: 4px;
+}
+
+.text-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  cursor: text;
+  padding: 4px;
+}
+
+.board-item.image {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0;
+  overflow: hidden;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  cursor: pointer;
+  font-size: 14px;
+  color: #1e40af;
+  text-align: center;
+  padding: 8px;
+}
+
+.image-placeholder:hover {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+}
+
+.image-content {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* --- FOOTER TOOLBAR --- */
+.bottom-toolbar {
+  flex: 0 0 auto;
+  background: #fff;
+  border-top: 1px solid #f3f4f6;
+  padding: 12px 16px;
+  z-index: 10;
+}
+
+.tools-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .tool-btn {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 4px;
-  padding: 10px 8px;
-  border-radius: 999px;
-  border: 1px solid #d4d4d8;
-  background: #fff;
   cursor: pointer;
-  font-size: 13px;
+  transition: transform 0.1s, background 0.1s;
+}
+
+.tool-btn:active {
+  transform: scale(0.96);
+  background: #f9fafb;
 }
 
 .tool-btn .icon {
-  font-weight: 600;
+  font-size: 20px;
 }
 
-@media (max-width: 768px) {
-  .editor {
-    padding: 16px;
-  }
+.tool-btn .label {
+  font-size: 11px;
+  color: #374151;
+}
 
-  .editor-header h1 {
-    font-size: 52px;    line-height: 1.2;  }
+/* --- RESPONSIVE ADJUSTMENTS --- */
+@media (min-width: 768px) {
 
-  .canvas-wrapper {
-    padding: 16px;
-  }
-
-  .canvas {
-    height: 280px;
-  }
-
-  .canvas-toolbar {
-    top: 16px;
-    right: 16px;
-    gap: 8px;
-  }
-
-  .icon-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    border-width: 2px;
-  }
-
-  .toolbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Sur ordinateur, on simule mieux l'appareil mobile */
+  .canvas-container {
+    border: 8px solid #fff;
+    /* Effet cadre */
+    box-shadow: 0 0 0 1px #e5e7eb, 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   }
 }
 </style>

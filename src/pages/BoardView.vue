@@ -22,16 +22,18 @@
         </div>
       </header>
 
-      <BoardCanvas v-if="board.elements?.length" :elements="board.elements" />
+      <!-- Affichage de l'image -->
+      <div v-if="board.imageUrl" class="board-image">
+        <img :src="board.imageUrl" :alt="board.title" />
+      </div>
       <div v-else class="empty-canvas small-muted">Aucun élément pour le moment.</div>
 
       <section class="board-actions card-subtle">
         <div class="action-block">
           <LikeButton
             :boardId="String(board._id)"
-            :username="board.user"
-            :initialLiked="board.likedByUser || false"
-            :initialCount="board.likes || 0"
+            :initialLiked="board.viewerHasLiked || false"
+            :initialCount="board.likesCount || 0"
           />
         </div>
       </section>
@@ -59,7 +61,6 @@ import api from '../services/api'
 import CommentsList from '../components/CommentsList.vue'
 import CommentForm from '../components/CommentForm.vue'
 import LikeButton from '../components/LikeButton.vue'
-import BoardCanvas from '../components/BoardCanvas.vue'
 import { useRoute } from 'vue-router'
 
 const board = ref({})
@@ -77,11 +78,8 @@ async function fetchBoard() {
     
     if (id) {
       const res = await api.boards.get(id)
-      console.log("res", res)
+      console.log("Board data:", res.data)
       board.value = res.data || {}
-      const comments = await api.boards.comments(id)
-      console.log("comments: ",comments);
-      
     }
   } catch (err) {
     console.error('Board load failed:', err)
@@ -117,6 +115,28 @@ onMounted(fetchBoard)
   margin: 0 0 6px;
 }
 
+/* Image container avec ratio 9:16 */
+.board-image {
+  margin: 24px auto;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Ratio 9:16 */
+  aspect-ratio: 9 / 16;
+  max-width: 360px;
+  width: 100%;
+}
+
+.board-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .board-section {
   margin-top: 24px;
 }
@@ -126,8 +146,20 @@ onMounted(fetchBoard)
 }
 
 .empty-canvas {
-  margin: 24px 0;
+  margin: 24px auto;
   text-align: center;
+  padding: 40px 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  
+  /* Même ratio que l'image */
+  aspect-ratio: 9 / 16;
+  max-width: 360px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .board-actions {
@@ -161,6 +193,14 @@ onMounted(fetchBoard)
 
   .board-section {
     margin-top: 16px;
+  }
+
+  .board-image {
+    max-width: 100%;
+  }
+
+  .empty-canvas {
+    max-width: 100%;
   }
 }
 </style>

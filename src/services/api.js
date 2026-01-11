@@ -16,6 +16,11 @@ const api = {
         'Authorization': `Bearer ${useAuth().$state.token}`
       }
     }),
+    create: (boardData) => axiosInstance.post('/boards', boardData, {
+      headers: {
+        'Authorization': `Bearer ${useAuth().$state.token}`
+      }
+    }),
     get: (id) => axiosInstance.get(`/boards/${id}`, {
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`
