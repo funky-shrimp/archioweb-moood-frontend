@@ -270,7 +270,6 @@ function onCardClick() {
 
 .preview-stage {
   width: 100%;
-  height: 320px;
   position: relative;
   background: #f6f6f8;
   border-radius: 8px;
@@ -288,8 +287,8 @@ function onCardClick() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 86%;
-  height: 90%;
+  width: 100%;
+  height: 100%;
 }
 
 .preview-image {

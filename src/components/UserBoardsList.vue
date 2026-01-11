@@ -51,7 +51,9 @@ const auth = useAuth()
 
 // Vérifie si l'utilisateur connecté peut supprimer les boards (propriétaire)
 const canDelete = computed(() => {
-  return auth.user && auth.user._id === props.userId
+  console.log(auth.user,props.userId);
+  
+  return auth.userId === props.userId
 })
 
 async function fetchBoards() {
@@ -84,19 +86,26 @@ async function fetchBoards() {
   }
 }
 
-onMounted(fetchBoards)
+onMounted(() => {
+  fetchBoards()
+  console.log('canDelete:', canDelete.value, 'auth.user:', auth.user, 'props.userId:', props.userId)
+})
 watch(() => props.userId, fetchBoards)
 
 function open(id) { router.push(`/board/${id}`) }
 function createBoard() { router.push({ name: 'BoardCreate' }) }
-function thumb(b) { const el = (b.elements||[]).find(x=>x.type==='image'); return el?.src || '/placeholder-400x240.png' }
+
+// Récupère l'image du board (imageUrl ou placeholder)
+function thumb(b) { 
+  return b.imageUrl || '/placeholder-400x240.png' 
+}
 
 async function deleteBoard(boardId) {
   if (!confirm('Are you sure you want to delete this board?')) return
   
   try {
     // Appel API (fixture pour le moment)
-    await api.delete(`/boards/${boardId}`)
+    await api.boards.delete(boardId)
     
     // Retire le board de la liste locale
     boards.value = boards.value.filter(b => b._id !== boardId)
@@ -120,7 +129,6 @@ async function deleteBoard(boardId) {
 
 .mini-card {
   border-radius: 14px;
-  overflow: hidden;
   border: 1px solid #eee;
   background: #f5f5f7;
   height: 180px;
@@ -136,6 +144,7 @@ async function deleteBoard(boardId) {
   border-color: #d1d5db;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .mini-thumb {
@@ -144,6 +153,8 @@ async function deleteBoard(boardId) {
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
+  border-radius: 14px 14px 0 0;
 }
 
 .mini-thumb img {
@@ -160,12 +171,15 @@ async function deleteBoard(boardId) {
 
 .meta {
   padding: 8px 10px 10px;
+  background: #f5f5f7;
 }
 
 .title {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  color: #111;
+  margin: 0;
 }
 
 .subtitle {
@@ -182,6 +196,8 @@ async function deleteBoard(boardId) {
   border-radius: 50%;
   width: 24px;
   height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,8 +205,10 @@ async function deleteBoard(boardId) {
   font-size: 14px;
   color: #ef4444;
   font-weight: 600;
-  z-index: 10;
+  z-index: 20;
   transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .delete-btn:hover {
