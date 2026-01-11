@@ -36,7 +36,7 @@ const api = {
       }),
     like: (id) =>
       axiosInstance.post(
-        `/boardsLike/${id}`,
+        `/boardslike/${id}`,
         {},
         {
           headers: {
@@ -45,7 +45,7 @@ const api = {
         }
       ),
     unlike: (id) =>
-      axiosInstance.delete(`/boardsLike/${id}`, {
+      axiosInstance.delete(`/boardslike/${id}`, {
         headers: {
           Authorization: `Bearer ${useAuth().$state.token}`,
         },
