@@ -3,22 +3,22 @@
     <div class="profile-shell card">
       <div v-if="loading" class="profile-loading">Loading...</div>
 
-      <template v-else-if="profile">
+      <template v-else-if="user">
         <header class="profile-header">
           <div class="avatar-wrap">
             <div class="avatar-circle">
               <!-- Avatar fixture -->
               <span class="avatar-initial">
-                {{ (profile.username || "U").charAt(0).toUpperCase() }}
+                {{ (user.username || "U").charAt(0).toUpperCase() }}
               </span>
             </div>
           </div>
 
           <div class="profile-main">
             <div class="name-row">
-              <h1 class="username">{{ profile.username }}</h1>
+              <h1 class="username">{{ user.username }}</h1>
               <button
-                v-if="isOwn"
+                v-if="isOwnProfile"
                 class="edit-btn"
                 type="button"
                 @click="openEdit"
@@ -27,12 +27,12 @@
               </button>
               <FollowButton
                 v-else
-                :userId="profile._id"
-                :initialFollowing="profile.isFollowing"
+                :userId="user._id"
+                :initialFollowing="user.isFollowing"
               />
             </div>
-            <p class="bio" v-if="profile.bio">
-              {{ profile.bio }}
+            <p class="bio" v-if="user.bio">
+              {{ user.bio }}
             </p>
           </div>
 
@@ -52,7 +52,7 @@
           <div class="boards-header">
             <h2>Boards</h2>
           </div>
-          <UserBoardsList v-if="profile && profile._id" :userId="profile._id" />
+          <UserBoardsList v-if="user && user._id" :userId="user._id" />
         </section>
       </template>
 
@@ -62,8 +62,8 @@
     </div>
 
     <ProfileEdit
-      v-if="showEdit && profile"
-      :user="profile"
+      v-if="showEdit && user"
+      :user="user"
       @saved="onSaved"
       @close="showEdit = false"
     />
@@ -84,15 +84,18 @@ import { watch } from "vue";
 const route = useRoute();
 const auth = useAuth();
 
-const paramId = route.params.id;
-const profile = ref(null);
+const user = ref(null);
 const loading = ref(true);
+const error = ref(null);
 const showEdit = ref(false);
 
-const isOwn = computed(() => {
-  if (!profile.value) return false;
-  return auth.userId === profile.value._id;
-});
+// ID utilisateur depuis l'URL
+const userId = computed(() => route.params.id);
+
+// Est-ce le profil de l'utilisateur connecté ?
+const isOwnProfile = computed(() =>
+  auth.isAuthenticated && auth.user?._id === userId.value
+);
 
 function fallbackProfile(id) {
   if (id) {
@@ -109,28 +112,39 @@ function fallbackProfile(id) {
   return SAMPLE_USERS[0] || { _id: "fixture", username: "Unknown", bio: "" };
 }
 
-async function fetchProfile(id) {
+async function fetchUser() {
   loading.value = true;
+  error.value = null;
+
   try {
-    const res = await api.user.getById(id);
-    profile.value = res.data || fallbackProfile(id);
-    console.log("Fetched profile:", profile.value);
-  } catch (err) {
-    profile.value = fallbackProfile(id);
+    console.log("Fetching user profile for ID:", auth.userId);
+
+    const res = await api.user.getById(auth.userId);
+    user.value = res.data;
+
+    console.log("User profile loaded:", auth.user);
+  } catch (e) {
+    console.error("Failed to fetch user:", e);
+    error.value = "Impossible de charger le profil utilisateur";
+    user.value = null;
   } finally {
     loading.value = false;
   }
 }
 
 onMounted(() => {
-  console.log("Profile page for id:", paramId);
-  fetchProfile(paramId);
+  if (userId.value) {
+    fetchUser();
+  } else {
+    error.value = "ID utilisateur manquant";
+    loading.value = false;
+  }
 });
 
 watch(
   () => route.params.id,
   (newId) => {
-    fetchProfile(newId);
+    fetchUser();
   }
 );
 
@@ -139,11 +153,11 @@ function openEdit() {
 }
 
 function onSaved(updatedUser) {
-  profile.value = { ...profile.value, ...updatedUser };
+  user.value = { ...user.value, ...updatedUser };
   // If we edited own profile, update auth store
-  if (isOwn.value) {
-    auth.user = profile.value;
-    localStorage.setItem("auth_user", JSON.stringify(profile.value));
+  if (isOwnProfile.value) {
+    auth.user = user.value;
+    localStorage.setItem("auth_user", JSON.stringify(user.value));
   }
   showEdit.value = false;
 }

@@ -22,7 +22,7 @@
       <button class="nav-btn" @click="router.push('/explore')">Explore</button>
       <!-- Si un user est connecté : lien vers son profil + bouton Logout -->
       <template v-if="auth.user">
-        <button class="nav-btn" @click="router.push(`/profile/${auth.userId}`)">{{ auth.user }}</button>
+        <button class="nav-btn" @click="goToProfile">{{ auth.user }}</button>
         <button class="nav-btn logout-btn" @click="logout">Logout</button>
       </template>
       <!-- Sinon : liens Login / Signup -->
@@ -53,8 +53,8 @@
           </button>
 
           <template v-if="auth.user">
-            <button class="mobile-nav-item" @click="navigateTo(`/profile/${auth.user._id}`)">
-              {{ auth.user.username }}
+            <button class="mobile-nav-item" @click="goToProfile">
+              {{ auth.user }}
             </button>
             <button class="mobile-nav-item logout-item" @click="logout">
               Logout
@@ -78,13 +78,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth, useAuthStore } from '../stores/auth'
+import { useAuth } from '../stores/auth'
 
-// Store d’auth pour savoir si un user est loggé
 const auth = useAuth()
 const router = useRouter()
-
-console.log("auth in header ", auth)
 
 // Texte de la barre de recherche
 const q = ref('')
@@ -99,7 +96,7 @@ function onSearch() {
 
 // Déconnexion simple : on vide le store + localStorage et on retourne à la home
 function logout() {
-  auth.clearAuth()
+  auth.logout()
   closeMenu()
   router.push('/login')
 }
@@ -116,6 +113,16 @@ function closeMenu() {
 function navigateTo(path) {
   router.push(path)
   closeMenu()
+}
+
+function goToProfile() {
+  if (!auth.user || !auth.userId) {
+    console.error('No user logged in or missing user._id')
+    return
+  }
+  
+  // Naviguer vers le profil avec l'ID utilisateur
+  router.push(`/profile/${auth.userId}`)
 }
 </script>
 
