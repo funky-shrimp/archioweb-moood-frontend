@@ -11,12 +11,13 @@ const axiosInstance = axios.create({
 const api = {
   // Boards
   boards: {
-    list: (cursor) =>
+    list: (params = {}) =>
       axiosInstance.get("/boards", {
+        params,
         headers: {
           Authorization: `Bearer ${useAuth().$state.token}`,
         },
-      },{ params: { cursor } }),
+      }),
     create: (boardData) => axiosInstance.post('/boards', boardData, {
       headers: {
         'Authorization': `Bearer ${useAuth().$state.token}`

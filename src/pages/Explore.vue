@@ -49,25 +49,31 @@ const observerInstance = ref(null)
 
 async function fetchBoards(cursor = null) {
   loading.value = true
-  error.value = null
+  error.value = null 
   
   try {
+    // Passer le cursor en paramètre
     const params = cursor ? { cursor } : {}
     const res = await api.boards.list(params)
     
-    console.log('API Response:', res)
+    console.log('API Response:', res.data)
     
-    const items = Array.isArray(res.data.items) ? res.data.items : res.data?.items || []
+    // Extraire correctement les données
+    const newItems = res.data.items || []
     
     if (cursor) {
-      boards.value.push(...items)
+      // Ajouter les nouveaux boards
+      boards.value.push(...newItems)
     } else {
-      boards.value = items
+      // Première requête : remplacer la liste
+      boards.value = newItems
     }
     
+    // Stocker le NOUVEAU cursor retourné par le serveur
     nextCursor.value = res.data.nextCursor || null
     
-    console.log('Boards loaded:', boards.value.length, 'Next cursor:', nextCursor.value)
+    console.log('Boards count:', boards.value.length)
+    console.log('Next cursor:', nextCursor.value)
     
   } catch (e) {
     console.error('Failed to load public boards:', e)
@@ -80,26 +86,19 @@ async function fetchBoards(cursor = null) {
   }
 }
 
-// Intersection Observer pour déclencher le chargement quand on scroll
 function setupObserver() {
-  // Nettoyer l'ancien observer
   if (observerInstance.value) {
     observerInstance.value.disconnect()
     observerInstance.value = null
   }
   
-  // Vérifier que sentinel existe et qu'il y a un nextCursor
   if (!sentinel.value || !nextCursor.value) {
-    console.log('setupObserver: sentinel ou nextCursor manquants', !!sentinel.value, !!nextCursor.value)
+    console.log('setupObserver: sentinel ou nextCursor manquants')
     return
   }
   
-  console.log('setupObserver: création de l\'observer')
-  
   const observer = new IntersectionObserver(
     entries => {
-      console.log('Intersection detected:', entries[0].isIntersecting, 'loading:', loading.value, 'nextCursor:', !!nextCursor.value)
-      
       if (entries[0].isIntersecting && nextCursor.value && !loading.value) {
         console.log('Fetching more boards with cursor:', nextCursor.value)
         fetchBoards(nextCursor.value)
@@ -114,13 +113,11 @@ function setupObserver() {
 
 onMounted(() => {
   fetchBoards()
-  // Attendre le prochain tick pour que sentinel soit rendu
   nextTick(() => {
     setupObserver()
   })
 })
 
-// Reconfigurer l'observer quand nextCursor change
 watch(() => nextCursor.value, () => {
   nextTick(() => {
     setupObserver()

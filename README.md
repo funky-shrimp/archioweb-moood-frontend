@@ -1,281 +1,147 @@
-# Mooodboard - Frontend
+# Moood — Frontend
 
-Application web moderne de création et partage de moodboards interactifs. Créez des tableaux visuels personnalisés avec des éléments multimédias (images, textes, vidéos, audio) et partagez-les avec la communauté.
+Moood is a mashup between a whiteboard and Pinterest. It was developed for the course "DevMobil" at HEIG-VD in Media Engineering.
 
-## 📋 Table des matières
+This is the frontend repository. A live deployment is available:
 
-- [Fonctionnalités](#fonctionnalités)
-- [Stack Technique](#stack-technique)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Développement](#développement)
-- [Build et Déploiement](#build-et-déploiement)
-- [Architecture](#architecture)
-- [Bonnes Pratiques](#bonnes-pratiques)
-- [Équipe](#équipe)
-- [Liens](#liens)
+Live demo: https://archioweb-moood-frontend.onrender.com
 
-## ✨ Fonctionnalités
+The backend is consumed via a REST API; configure the API URL in your environment (see Configuration).
 
-### 1. Gestion des utilisateurs
-- **Inscription et connexion** : Authentification complète via l'API backend
-- **Stockage sécurisé** : Token JWT stocké localement avec gestion automatique de session
-- **Interface dynamique** : Mise à jour en temps réel de l'UI selon l'état de connexion
-- **Profils utilisateurs** : Consultation et modification des profils (username, bio, avatar)
+## Table of Contents
+- Features
+- Getting Started
+- Configuration
+- Project Structure
+- Scripts
+- API Integration
+- Dependencies
+- License
 
-### 2. Gestion des ressources (Boards)
-- **CRUD complet** :
-  - Création de boards personnalisés avec drag & drop d'éléments
-  - Visualisation des boards avec pan/zoom interactif
-  - Modification et suppression des boards personnels
-- **Exploration** :
-  - Liste paginée des boards publics
-  - Recherche avec filtres (tags, utilisateurs)
-  - Données agrégées (likes, commentaires)
-- **Interactions sociales** :
-  - Système de likes
-  - Commentaires
-  - Suivi d'utilisateurs (Follow)
+## Features
+- Authentication (signup/login with JWT)
+- Boards: create, edit, view; publish renders a 9:16 image from the canvas
+- Social: likes, comments, follows
+- Interactive canvas: drag & drop (mouse + touch), layer ordering
+- Mobile-first responsive UI
+- Mobile hardware: shake-to-randomize (DeviceMotion), touch drag
 
-### 3. Fonctionnalités temps réel
-- **Canvas interactif** : Manipulation fluide des éléments avec animations
-- **Drag & drop** : Positionnement précis des éléments multimédias
-- **Pan & Zoom** : Navigation intuitive sur les boards
-- **Feedback visuel** : Animations et transitions optimisées
+## Getting Started
 
-## 🛠 Stack Technique
+### Prerequisites
+- Node.js (v20+ recommended)
+- Modern browser (Chromium/Firefox/Safari mobile)
 
-- **Framework** : Vue 3 (Composition API avec `<script setup>`)
-- **Build Tool** : Vite
-- **State Management** : Pinia
-- **Routing** : Vue Router avec gardes d'authentification
-- **HTTP Client** : Axios
-- **Styling** : CSS Scoped (responsive-first)
-
-## 📦 Installation
-
-### Prérequis
-- Node.js >= 18.x
-- npm >= 9.x
-
-### Étapes d'installation
+### Installation
+Clone the repository:
 
 ```bash
-# Cloner le repository
-git clone https://github.com/votre-org/archioweb-moood-frontend.git
+git clone <repo-url>
 cd archioweb-moood-frontend
+```
 
-# Installer les dépendances
+Install dependencies:
+
+```bash
 npm install
-
-# Créer le fichier d'environnement
-cp .env.example .env
 ```
 
-## ⚙️ Configuration
-
-### Variables d'environnement
-
-Créez un fichier `.env` à la racine du projet :
-
-```env
-# URL de l'API backend
-VITE_API_URL=http://localhost:3000/api
-
-# Mode développement avec fixtures (true/false)
-VITE_USE_FIXTURES=false
-```
-
-### Variables pour la production (Render)
-
-Configurez les variables d'environnement suivantes dans Render :
-
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `VITE_API_URL` | URL de l'API backend déployée | `https://your-api.onrender.com/api` |
-| `VITE_USE_FIXTURES` | Désactiver les fixtures en production | `false` |
-
-## 💻 Développement
-
-### Lancer le serveur de développement
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-L'application sera accessible sur `http://localhost:5173`
-
-### Mode développement avec fixtures
-
-Pour développer sans backend :
-
-```env
-VITE_USE_FIXTURES=true
-```
-
-Les fixtures se trouvent dans `src/_dev/fixtures.js`
-
-### Commandes utiles
+Build for production:
 
 ```bash
-# Linter
-npm run lint
-
-# Format du code
-npm run format
-
-# Build de production
 npm run build
-
-# Prévisualisation du build
 npm run preview
 ```
 
-## 🚀 Build et Déploiement
+## Configuration
+All configuration is managed via environment variables. Create a `.env` file at the project root and set the following:
 
-### Build local
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | Backend API base URL | `/api` (proxy) |
+| `VITE_USE_FIXTURES` | Use local fixtures instead of API | `false` |
 
-```bash
-npm run build
+Enable fixtures for frontend-only development (lets you explore UI without a backend):
+
+```env
+VITE_USE_FIXTURES=true
+
+Notes:
+- In production (Render), set `VITE_API_URL` to your backend’s public `/api` base URL, or keep `/api` if the frontend is reverse-proxying to the backend under the same domain.
+- Authentication is enforced by router guards; accessing protected routes without a valid token redirects to Signup/Login.
 ```
 
-Le build sera généré dans le dossier `dist/`
-
-### Déploiement sur Render
-
-#### Configuration Render
-
-1. **Service** : Static Site
-2. **Build Command** : `npm install && npm run build`
-3. **Publish Directory** : `dist`
-4. **Node Version** : 18.x
-
-#### Variables d'environnement Render
-
-Configurez dans l'interface Render :
-- `VITE_API_URL` = URL de votre API backend
-- `VITE_USE_FIXTURES` = `false`
-
-#### Déploiement automatique
-
-Le projet est configuré pour le déploiement automatique depuis la branche `main` :
-
-```bash
-# Pousser les changements
-git add .
-git commit -m "Description des modifications"
-git push origin main
-```
-
-Render détectera automatiquement les changements et déclenchera un nouveau build.
-
-## 🏗 Architecture
-
-### Structure du projet
+## Project Structure
 
 ```
 src/
-├── assets/          # Fichiers statiques (styles globaux, images)
-├── components/      # Composants réutilisables
+├── assets/          # Global styles, images
+├── components/      # Reusable UI components
 │   ├── BoardCanvas.vue
 │   ├── BoardCard.vue
 │   ├── Header.vue
 │   ├── ProfileEdit.vue
 │   └── ...
-├── pages/           # Vues/Pages de l'application
+├── pages/           # Application views
 │   ├── Explore.vue
 │   ├── BoardView.vue
 │   ├── BoardEdit.vue
 │   ├── Profile.vue
 │   └── ...
-├── router/          # Configuration du routeur
+├── router/          # Vue Router
 │   └── index.js
-├── services/        # Services (API, utilitaires)
+├── services/        # API client, helpers
 │   └── api.js
-├── stores/          # State management (Pinia)
+├── stores/          # Pinia stores
 │   └── auth.js
-├── _dev/            # Données de développement
+├── websocket/          
+│   └── wsClient.js
+├── _dev/            # Fixtures for local development
 │   └── fixtures.js
-├── App.vue          # Composant racine
-└── main.js          # Point d'entrée
+├── App.vue          # Root component
+└── main.js          # Entry point
 ```
 
-### Routes principales
+## Scripts
+- `npm run dev` — Start the Vite dev server
+- `npm run build` — Build production assets
+- `npm run preview` — Preview the production build locally
 
-| Route | Page | Protection |
-|-------|------|------------|
-| `/` | Redirection vers Explore | - |
-| `/explore` | Liste des boards publics | - |
-| `/search` | Recherche de boards | - |
-| `/board/:id` | Détail d'un board | - |
-| `/board/edit` | Création de board | Auth requise |
-| `/profile/:username` | Profil utilisateur | - |
-| `/login` | Connexion | Public |
-| `/signup` | Inscription | Public |
+## API Integration
+- The frontend consumes the backend REST API via Axios ([src/services/api.js](src/services/api.js)).
+- Authorization: Bearer token from Pinia store (`auth_token`), automatically injected in request headers.
+- Endpoints used (examples):
+	- `GET /boards` — list boards
+	- `POST /boards` — create a board (with `title`, `description`, `imageUrl`, `isPublic`)
+	- `GET /boards/:id` — board details
+	- `POST /boardsLike/:id` / `DELETE /boardsLike/:id` — like/unlike
+	- `GET /boards/:id/comments` — list comments
+	- `POST /boards/:id/comments` — add comment
 
-## ✅ Bonnes Pratiques
+See backend docs for full API reference (`/api/docs`).
 
-### 1. Composants Vue.js
-- **Composition API** : Utilisation systématique de `<script setup>`
-- **Props/Emits** : Typage explicite et documentation
-- **Réutilisabilité** : Composants modulaires et découplés
-- **Scoped CSS** : Styles isolés par composant
+### Publishing flow
+When you publish a board from the editor, the app renders the current layout to a 360×640 canvas (ratio 9:16) and posts the resulting `imageUrl` (data URL) to the backend along with metadata.
 
-### 2. Gestion d'état
-- **Pinia Store** : Centralisation de l'authentification
-- **Persistance** : localStorage pour le token JWT
-- **Réactivité** : Computed properties pour les états dérivés
+## Dependencies
+- Runtime: `vue`, `vue-router`, `pinia`, `axios`, `quasar`, `vue3-toastify`
+- Dev: `vite`, `@vitejs/plugin-vue`, `@quasar/vite-plugin`, `vite-plugin-vue-devtools`
 
-### 3. Routing
-- **Gardes de navigation** : Protection des routes authentifiées
-- **Lazy loading** : Chargement différé des pages
-- **Meta-données** : Configuration via route.meta
+## Deployment
+- Frontend deployed to Render: https://archioweb-moood-frontend.onrender.com
+- Ensure `VITE_API_URL` points to the backend (Render or other) and that CORS/headers allow the domain.
 
-### 4. Gestion asynchrone
-- **Async/await** : Syntaxe moderne pour les appels API
-- **Gestion d'erreurs** : Try/catch systématique
-- **Feedback utilisateur** : Messages d'erreur explicites
-- **Loading states** : Indicateurs de chargement
+## Mobile hardware
+- Shake-to-randomize: on mobile, a device “shake” randomizes element positions and z-order in the editor. On iOS, motion permissions may require a user gesture to enable DeviceMotion events.
 
-### 5. Responsive Design
-- **Mobile-first** : Approche responsive avec breakpoints
-- **Media queries** : `@media (max-width: 768px)`
-- **Touch-friendly** : Éléments tactiles adaptés (40px minimum)
-- **Navigation mobile** : Menu burger, overlay
-
-### 6. UX/UI
-- **Validation client** : Formulaires avec feedback immédiat
-- **Messages d'erreur** : Textes clairs et exploitables
-- **Transitions** : Animations fluides (CSS transitions)
-- **Accessibilité** : Boutons, labels, contraste
-
-## 👥 Équipe
-
-- **[Nom Membre 1]** - [Role]
-- **[Nom Membre 2]** - [Role]
-- **[Nom Membre 3]** - [Role]
-- **Théo** - Frontend Developer
-
-## 🔗 Liens
-
-- **Frontend déployé** : [https://votre-app.onrender.com](https://votre-app.onrender.com)
-- **Backend API** : [https://votre-api.onrender.com](https://votre-api.onrender.com)
-- **Repository Backend** : [https://github.com/votre-org/archioweb-moood-backend](https://github.com/votre-org/archioweb-moood-backend)
-- **Documentation API** : [https://votre-api.onrender.com/docs](https://votre-api.onrender.com/docs)
-
-## 📝 IDE Setup (Recommandé)
-
-### VS Code
-- [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
-- Désactiver Vetur si installé
-
-### Browser DevTools
-- **Chrome/Edge** : [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-- **Firefox** : [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-
----
-
-**Projet réalisé dans le cadre du cours ArchiOWeb - 2026**
+## License
+This project is for educational purposes at HEIG-VD (DevMobil).
 
 
 
