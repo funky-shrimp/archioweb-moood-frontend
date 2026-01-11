@@ -4,7 +4,7 @@
     Elle affiche : l’owner, un aperçu interactif (pan/zoom) et des actions (like / commentaires).
     Un clic “normal” sur la carte ouvre la page détaillée du board.
   -->
-  <article class="board-card" :class="{ dragging }" @click="onCardClick" role="button" tabindex="0">
+  <article class="board-card" :class="{ dragging }" role="button" tabindex="0">
     <!-- En-tête : infos sur l’auteur + bouton Follow -->
     <div class="board-header">
       <img class="owner-avatar" :src="ownerAvatar" alt="avatar" v-if="board?.owner" />
@@ -13,25 +13,14 @@
         <div class="owner-sub small-muted">{{ boardSubtitle }}</div>
       </div>
       <div class="spacer"></div>
-      <FollowButton
-        v-if="showFollow && board?.owner?._id"
-        :userId="board.owner._id"
-        :initialFollowing="board.owner?.viewerIsFollowing"
-        @toggled.stop
-      />
+      <FollowButton v-if="showFollow && board?.owner?._id" :userId="board.owner._id"
+        :initialFollowing="board.owner?.viewerIsFollowing" @toggled.stop />
     </div>
 
     <!-- Preview interactif : on peut “tirer” l’image et zoomer à la molette -->
-    <div class="board-preview">
-      <div
-        class="preview-stage"
-        ref="stage"
-        @pointerdown="onPointerDown"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerUp"
-        @pointercancel="onPointerUp"
-        @wheel.prevent="onWheel"
-      >
+    <div class="board-preview" @click="onCardClick">
+      <div class="preview-stage" ref="stage" @pointerdown="onPointerDown" @pointermove="onPointerMove"
+        @pointerup="onPointerUp" @pointercancel="onPointerUp" @wheel.prevent="onWheel">
         <div class="preview-content" ref="content" :style="contentStyle">
           <img v-if="firstImage" :src="firstImage" class="preview-image" />
           <div v-else class="preview-placeholder">No preview</div>
@@ -43,9 +32,8 @@
 
     <!-- Actions sous la carte (like + compteur de commentaires) -->
     <div class="board-actions" v-if="showActions">
-      <button class="icon-btn" @click.stop="toggleLike">
-        <span class="heart">♡</span> <span class="count">{{ likesCount }}</span>
-      </button>
+      <LikeButton :boardId="String(board._id)" :username="board.user" :initialLiked="board.likedByUser || false"
+        :initialCount="board.likes || 0" />
       <button class="icon-btn" @click.stop="openComments">
         💬
       </button>
@@ -58,6 +46,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import FollowButton from './FollowButton.vue'
 import api from '../services/api'
+import LikeButton from './LikeButton.vue'
 
 // Props :
 //  - board : données du board (obligatoire)
@@ -97,20 +86,21 @@ function open() {
   router.push(`/board/${props.board._id}`)
 }
 
-// Like / unlike optimiste, synchronisé avec l’API
+// Like / unlike optimiste, synchronisé avec l'API
 async function toggleLike() {
   try {
     const liked = !!props.board.likedByUser || false
     if (liked) {
-      await api.post(`/boards/${props.board._id}/unlike`)
+      await api.boards.unlike(props.board._id)
       likesCount.value = Math.max(0, likesCount.value - 1)
-      props.board.viewerHasLiked = false
+      props.board.likedByUser = false
     } else {
-      await api.post(`/boards/${props.board._id}/like`)
+      await api.boards.like(props.board._id)
       likesCount.value = likesCount.value + 1
-      props.board.viewerHasLiked = true
+      props.board.likedByUser = true
     }
   } catch (e) {
+    console.error('Like toggle failed:', e)
     // en mode front-only on ignore simplement les erreurs
   }
 }
@@ -166,7 +156,7 @@ function onPointerUp(e) {
   dragging.value = false
   try {
     e.target.releasePointerCapture?.(e.pointerId)
-  } catch {}
+  } catch { }
 }
 
 // Zoom à la molette autour du pointeur
@@ -194,19 +184,120 @@ function onCardClick() {
 </script>
 
 <style scoped>
-.board-card { background:#fff; border-radius:12px; padding:16px; border:1px solid #eee; display:flex; flex-direction:column; gap:14px; cursor:default; max-width:980px; margin:0 auto; }
-.board-card.dragging { cursor:grabbing }
-.board-header { display:flex; align-items:center; gap:12px; }
-.owner-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #e6e6e6 }
-.owner-meta { display:flex; flex-direction:column }
-.owner-name { font-weight:600; font-size:15px; }
-.spacer { flex:1 }
-.board-preview { display:flex; justify-content:center; align-items:center; background:transparent; border-radius:10px; overflow:hidden }
-.preview-stage { width:100%; height:320px; position:relative; background:#f6f6f8; border-radius:8px; overflow:hidden; touch-action:none; cursor:grab; display:flex; align-items:center; justify-content:center }
-.preview-content { will-change:transform; transition: transform 120ms linear; display:flex; align-items:center; justify-content:center; width:86%; height:90%; }
-.preview-image { width:100%; height:100%; object-fit:cover; border-radius:6px }
-.open-btn { position:absolute; right:10px; top:10px; z-index:10; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.9); border:1px solid #ddd; cursor:pointer }
-.board-actions { display:flex; gap:10px; align-items:center; justify-self:flex-end }
-.icon-btn { border:1px solid #eee; background:#fff; padding:6px 10px; border-radius:18px; cursor:pointer }
-.count { margin-left:6px; font-weight:600 }
+.board-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: default;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.board-card.dragging {
+  cursor: grabbing
+}
+
+.board-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.owner-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e6e6e6
+}
+
+.owner-meta {
+  display: flex;
+  flex-direction: column
+}
+
+.owner-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.spacer {
+  flex: 1
+}
+
+.board-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  border-radius: 10px;
+  overflow: hidden
+}
+
+.preview-stage {
+  width: 100%;
+  height: 320px;
+  position: relative;
+  background: #f6f6f8;
+  border-radius: 8px;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center
+}
+
+.preview-content {
+  will-change: transform;
+  transition: transform 120ms linear;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 86%;
+  height: 90%;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px
+}
+
+.open-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 10;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  cursor: pointer
+}
+
+.board-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-self: flex-end
+}
+
+.icon-btn {
+  border: 1px solid #eee;
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 18px;
+  cursor: pointer
+}
+
+.count {
+  margin-left: 6px;
+  font-weight: 600
+}
 </style>
