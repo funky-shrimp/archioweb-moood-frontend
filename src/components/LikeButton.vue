@@ -69,6 +69,7 @@ async function toggle() {
   loading.value = true;
   try {
     if (!liked.value) {
+      console.log("board is being liked");
       await api.boards.like(props.boardId);
 
       wsClient
@@ -80,6 +81,7 @@ async function toggle() {
       liked.value = true;
       count.value += 1;
     } else {
+      console.log("board is being unliked");
       await api.boards.unlike(props.boardId);
       liked.value = false;
       count.value = count.value - 1;

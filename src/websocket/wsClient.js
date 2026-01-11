@@ -3,7 +3,7 @@ import { WSClient } from "wsmini";
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8887";
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8887/ws";
 
 const wsClient = new WSClient(WS_URL);
 
