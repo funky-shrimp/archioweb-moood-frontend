@@ -3,15 +3,18 @@ import { WSClient } from "wsmini";
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css";
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8887/ws";
+const WS_URL = import.meta.env.VITE_WS_URL ?? "localhost";
+const WS_PORT = import.meta.env.VITE_WS_PORT ?? "8887";
+const WS_PROTOCOL = import.meta.env.VITE_WS_PROTOCOL ?? "wss";
 
-const wsClient = new WSClient(WS_URL);
+console.log("WebSocket config:", `${WS_PROTOCOL}://${WS_URL}:${WS_PORT}`)
+const wsClient = new WSClient(`${WS_PROTOCOL}://${WS_URL}:${WS_PORT}`);
 
 async function connectToNotifications(token) {
   try {
     //envoie du token car il contient déjà toutes les infos de l'user
     await wsClient.connect(token);
-    console.log("WebSocket connected");
+    console.log("WebSocket connected", wsClient);
 
     //inscription aux notifications (pour avoir les likes)
     await wsClient.sub("notifications", (notification) => {});

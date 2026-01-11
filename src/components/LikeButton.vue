@@ -72,11 +72,18 @@ async function toggle() {
       console.log("board is being liked");
       await api.boards.like(props.boardId);
 
-      wsClient
-        .rpc("like", { username: props.username, from: auth.user })
-        .catch((err) => {
-          console.error("Failed to send like notification via WebSocket:", err);
-        });
+      if (wsClient !== null) {
+        wsClient
+          .rpc("like", { username: props.username, from: auth.user })
+          .catch((err) => {
+            console.error(
+              "Failed to send like notification via WebSocket:",
+              err
+            );
+          });
+      }else{
+        console.warn("WebSocket client not connected, cannot send like notification");
+      }
 
       liked.value = true;
       count.value += 1;
