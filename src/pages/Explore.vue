@@ -7,7 +7,7 @@
 
     <main style="max-width:980px; margin:0 auto 40px;">
       <!-- Loading state -->
-      <div v-if="loading" class="loading" style="text-align: center; padding: 40px;">
+      <div v-if="loading && boards.length === 0" class="loading" style="text-align: center; padding: 40px;">
         <p>Chargement des moodboards...</p>
       </div>
 
@@ -22,41 +22,116 @@
           <p>Aucun moodboard public trouvé.</p>
         </div>
         <BoardCard v-for="b in boards" :key="b._id" :board="b" />
+
+        <!-- Sentinel element pour déclencher le chargement des prochains boards -->
+        <div v-if="nextCursor && !loading" ref="sentinel" style="height: 20px; margin-top: 40px;"></div>
+
+        <!-- Loading indicator pour les chargements supplémentaires -->
+        <div v-if="loading && boards.length > 0" style="text-align: center; padding: 20px;">
+          <p>Chargement de plus de moodboards...</p>
+        </div>
       </section>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import api from '../services/api'
 import BoardCard from '../components/BoardCard.vue'
 
 const boards = ref([])
 const loading = ref(false)
 const error = ref(null)
+const nextCursor = ref(null)
+const sentinel = ref(null)
+const observerInstance = ref(null)
 
-async function fetchBoards() {
+async function fetchBoards(cursor = null) {
   loading.value = true
   error.value = null
   
   try {
-    const res = await api.boards.list()
-    console.log(res);
+    const params = cursor ? { cursor } : {}
+    const res = await api.boards.list(params)
     
-    boards.value = Array.isArray(res.data.items) ? res.data.items : res.data?.items || []
-    console.log('Boards loaded:', boards.value)
+    console.log('API Response:', res)
+    
+    const items = Array.isArray(res.data.items) ? res.data.items : res.data?.items || []
+    
+    if (cursor) {
+      boards.value.push(...items)
+    } else {
+      boards.value = items
+    }
+    
+    nextCursor.value = res.data.nextCursor || null
+    
+    console.log('Boards loaded:', boards.value.length, 'Next cursor:', nextCursor.value)
     
   } catch (e) {
     console.error('Failed to load public boards:', e)
     error.value = 'Impossible de charger les moodboards. Veuillez réessayer.'
-    boards.value = []
+    if (!cursor) {
+      boards.value = []
+    }
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchBoards)
+// Intersection Observer pour déclencher le chargement quand on scroll
+function setupObserver() {
+  // Nettoyer l'ancien observer
+  if (observerInstance.value) {
+    observerInstance.value.disconnect()
+    observerInstance.value = null
+  }
+  
+  // Vérifier que sentinel existe et qu'il y a un nextCursor
+  if (!sentinel.value || !nextCursor.value) {
+    console.log('setupObserver: sentinel ou nextCursor manquants', !!sentinel.value, !!nextCursor.value)
+    return
+  }
+  
+  console.log('setupObserver: création de l\'observer')
+  
+  const observer = new IntersectionObserver(
+    entries => {
+      console.log('Intersection detected:', entries[0].isIntersecting, 'loading:', loading.value, 'nextCursor:', !!nextCursor.value)
+      
+      if (entries[0].isIntersecting && nextCursor.value && !loading.value) {
+        console.log('Fetching more boards with cursor:', nextCursor.value)
+        fetchBoards(nextCursor.value)
+      }
+    },
+    { threshold: 0.1, rootMargin: '100px' }
+  )
+  
+  observer.observe(sentinel.value)
+  observerInstance.value = observer
+}
+
+onMounted(() => {
+  fetchBoards()
+  // Attendre le prochain tick pour que sentinel soit rendu
+  nextTick(() => {
+    setupObserver()
+  })
+})
+
+// Reconfigurer l'observer quand nextCursor change
+watch(() => nextCursor.value, () => {
+  nextTick(() => {
+    setupObserver()
+  })
+})
+
+onUnmounted(() => {
+  if (observerInstance.value) {
+    observerInstance.value.disconnect()
+  }
+})
 </script>
 
 <style scoped>
