@@ -12,7 +12,6 @@
         <div class="header-actions">
           <button class="back-btn" @click="goBack" title="Retour">← Retour</button>
           <button class="icon-btn" @click="reset" title="Tout effacer">×</button>
-          <button class="icon-btn save-btn" @click="saveBoard" title="Sauvegarder">💾</button>
           <button class="icon-btn publish-btn" @click="publishBoard" title="Publier">🚀</button>
         </div>
       </div>
@@ -41,6 +40,7 @@
               class="board-item"
               :class="[el.type, { selected: selectedElement === el.id, editing: editingId === el.id }]"
               :style="styleFor(el)"
+              :data-editing-id="el.id"
               @mousedown.prevent="startDrag(el, $event)"
               @touchstart.prevent="startDrag(el, $event)"
               @click.stop="selectElement(el)"
@@ -57,7 +57,7 @@
                     autofocus
                   ></textarea>
                 </div>
-                <div v-else class="text-content">
+                <div v-else class="text-content" @click.stop="startEdit(el, $event)" tabindex="0">
                   {{ el.content || 'Cliquez pour éditer' }}
                 </div>
               </template>
@@ -93,7 +93,7 @@
 
 <script setup>
 import api from '@/services/api'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -136,14 +136,21 @@ function add(type) {
     y: boardH / 2 - h / 2 + (Math.random() * 20 - 10),
     w,
     h,
-    content: type === 'text' ? 'Cliquez pour éditer' : '',
+    content: type === 'text' ? '' : 'Cliquez pour éditer',
     src: ''
   }
 
   elements.value = [...elements.value, newElement]
 
   if (type === 'text') {
+    selectedElement.value = newElement.id
     editingId.value = newElement.id
+    // Blur les autres éléments d'abord, puis focus
+    nextTick(() => {
+      document.activeElement?.blur()
+      const textarea = document.querySelector(`[data-editing-id="${newElement.id}"] .text-input`)
+      textarea?.focus()
+    })
   } else if (type === 'image') {
     promptImage(newElement)
   }
@@ -192,6 +199,13 @@ function startEdit(el, event) {
   event?.stopPropagation()
   editingId.value = el.id
   selectedElement.value = el.id
+  
+  // Focus sur la textarea au prochain tick
+  nextTick(() => {
+    document.activeElement?.blur()
+    const textarea = document.querySelector(`[data-editing-id="${el.id}"] .text-input`)
+    textarea?.focus()
+  })
 }
 
 function finishEdit(el) {
@@ -199,6 +213,7 @@ function finishEdit(el) {
   if (el && typeof el.content === 'string') {
     el.content = el.content.trim()
   }
+  selectedElement.value = el.id // Garder l'élément sélectionné
 }
 
 function updateText(el, newContent) {
