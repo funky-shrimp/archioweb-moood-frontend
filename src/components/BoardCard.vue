@@ -100,7 +100,7 @@ function open() {
 // Like / unlike optimiste, synchronisé avec l’API
 async function toggleLike() {
   try {
-    const liked = !!props.board.viewerHasLiked
+    const liked = !!props.board.likedByUser || false
     if (liked) {
       await api.post(`/boards/${props.board._id}/unlike`)
       likesCount.value = Math.max(0, likesCount.value - 1)

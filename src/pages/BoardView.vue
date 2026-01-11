@@ -30,7 +30,7 @@
           <LikeButton
             :boardId="String(board._id)"
             :username="board.user"
-            :initialLiked="board.viewerHasLiked"
+            :initialLiked="board.likedByUser || false"
             :initialCount="board.likes || 0"
           />
         </div>
